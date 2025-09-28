@@ -2,6 +2,7 @@
 // pages/Reports.tsx
 import { Sidebar } from "@/components/Sidebar";
 import { ReportBox } from "@/components/reports/Reportbox";
+import { Header } from "@/components/Header";
 
 import {
   FileText,
@@ -21,11 +22,10 @@ const Reports = () => {
     <div className="flex h-screen">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header with Gradient Background */}
-        <div className="bg-gradient-to-b from-[#818CF8] to-[#C084FC] p-6">
-          <h1 className="text-2xl font-semibold text-white">Reports</h1>
-          <p className="text-white/80">View your company reports</p>
-        </div>
+        <Header
+          title="Reports"
+          description="View your company reports"
+        />
 
         {/* Progress Message */}
         <div className="flex-1 flex items-center justify-center p-6">

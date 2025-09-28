@@ -78,7 +78,19 @@ export function TransactionsTable({
   console.log('TransactionsTable - filtered transactions:', filteredTransactions.length);
 
   // Common action handlers
-  const handleEdit = (id: string) => navigate(`/edit-purchase/${id}`);
+  const handleEdit = (id: string) => {
+    const tabToTypeMap: Record<string, string> = {
+      invoices: "invoice",
+      shipments: "shipment",
+      orders: "order",
+      offers: "offer",
+      requests: "request",
+      quotations: "quotation",
+      approval: "offer",
+    };
+    const type = tabToTypeMap[activeTab] || "invoice";
+    navigate(`/edit-purchase/${id}?type=${type}`);
+  };
   const handleDelete = (id: string) => {
     setTransactionToDelete(id);
     setIsDeleteDialogOpen(true);
@@ -157,11 +169,9 @@ export function TransactionsTable({
           />
         );
       case "quotations":
-        const quotations = filteredTransactions.filter(isQuotation);
-        console.log('Quotations to render:', quotations.length);
+        console.log('Rendering quotations table with API data');
         return (
           <PurchaseQuotationsTable
-            quotations={quotations}
             onDelete={handleDelete}
             onEdit={handleEdit}
             onView={(id) => navigate(`/purchase-quotation/${id}`)}

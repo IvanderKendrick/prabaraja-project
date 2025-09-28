@@ -34,6 +34,7 @@ export function PurchaseItemsForm({
         id: Math.random().toString(36).substr(2, 9),
         name: "",
         quantity: 1,
+          unit: "kg",
         price: 0,
       },
     ]);
@@ -118,7 +119,7 @@ export function PurchaseItemsForm({
       <div className="space-y-4">
         {items.map((item) => (
           <div key={item.id} className="grid grid-cols-12 gap-4 items-center border-b pb-4">
-            <div className="col-span-5">
+            <div className="col-span-4">
               <Label htmlFor={`item-name-${item.id}`}>Item Name</Label>
               <Input id={`item-name-${item.id}`} value={item.name} onChange={(e) => handleItemChange(item.id, "name", e.target.value)} />
             </div>
@@ -126,7 +127,19 @@ export function PurchaseItemsForm({
               <Label htmlFor={`item-quantity-${item.id}`}>Qty</Label>
               <Input id={`item-quantity-${item.id}`} type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(item.id, "quantity", parseInt(e.target.value))} />
             </div>
-            <div className="col-span-3">
+            <div className="col-span-2">
+              <Label htmlFor={`item-unit-${item.id}`}>Unit</Label>
+              <Select value={item.unit} onValueChange={(value: "kg" | "buah") => handleItemChange(item.id, "unit", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="buah">buah</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2">
               <Label htmlFor={`item-price-${item.id}`}>Price</Label>
               <Input id={`item-price-${item.id}`} type="text" inputMode="numeric" value={formatPriceDisplay(item.price)} onChange={(e) => handlePriceChange(item.id, e.target.value)} placeholder="0" />
             </div>

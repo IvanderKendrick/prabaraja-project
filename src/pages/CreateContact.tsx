@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -173,11 +174,8 @@ const CreateContact = () => {
       <div className="flex min-h-screen">
         <Sidebar />
         <main className="flex-1">
-          <div className="px-8 pt-8">
-            <h1 className="text-2xl font-semibold  mb-4">Edit Contact</h1>
-            <p className="">Contact not found</p>
-          </div>
-          <div className="p-6 max-w-3xl mx-auto">
+          <Header title="Edit Contact" description="Contact not found" />
+          <div className="p-6">
             <Button variant="outline" onClick={() => navigate("/contacts")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Contacts
@@ -197,18 +195,14 @@ const CreateContact = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1">
-        <div className="px-8 pt-8">
-          <h1 className="text-2xl font-semibold  mb-4">
-            {isEditing ? "Edit Contact" : "Create New Contact"}
-          </h1>
-          <p className="">
-            {isEditing
-              ? "Update contact information"
-              : "Add a new contact to your network"}
-          </p>
-        </div>
+        <Header
+          title={isEditing ? "Edit Contact" : "Create New Contact"}
+          description={
+            isEditing ? "Update contact information" : "Add a new contact to your network"
+          }
+        />
 
-        <div className="p-6 max-w-3xl mx-auto">
+        <div className="p-6">
           <Button
             variant="outline"
             className="mb-6"

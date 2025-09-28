@@ -1,5 +1,5 @@
 import { LayoutDashboard, FileText, Wallet, ShoppingBag, ShoppingCart, MessageSquare, Users, Package, Database, Settings, LogOut } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentUserProfile } from "@/hooks/useProfiles";
 import { useState, useRef, useEffect } from "react";
@@ -46,12 +46,38 @@ const SubMenu = ({ isOpen, children }: SubMenuProps) => {
 };
 
 export const Sidebar = () => {
-  const currentPath = window.location.pathname;
+  const location = useLocation();
+  const currentPath = location.pathname;
   const { signOut, user } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useCurrentUserProfile();
+  
+  // Helper function to check if current path is related to purchases
+  const isPurchasesRelated = (path: string) => {
+    return path.startsWith("/purchases") || 
+           path.startsWith("/purchase-quotation") ||
+           path.startsWith("/invoice/") ||
+           path.startsWith("/order/") ||
+           path.startsWith("/offer/") ||
+           path.startsWith("/shipment/") ||
+           path.startsWith("/request/") ||
+           path.startsWith("/edit-purchase/") ||
+           path.startsWith("/approval-quotation") ||
+           path.startsWith("/approval-request") ||
+           path.startsWith("/approval-shipment") ||
+           path.startsWith("/approval-invoice") ||
+           path.startsWith("/approval-billing-invoice");
+  };
+  
   const [isSalesOpen, setIsSalesOpen] = useState(currentPath.startsWith("/sales"));
-  const [isPurchasesOpen, setIsPurchasesOpen] = useState(currentPath.startsWith("/purchases"));
+  const [isPurchasesOpen, setIsPurchasesOpen] = useState(isPurchasesRelated(currentPath));
   const [isAssetsOpen, setIsAssetsOpen] = useState(currentPath.startsWith("/assets"));
+
+  // Keep submenu open states in sync with current route
+  useEffect(() => {
+    setIsSalesOpen(currentPath.startsWith("/sales"));
+    setIsPurchasesOpen(isPurchasesRelated(currentPath));
+    setIsAssetsOpen(currentPath.startsWith("/assets"));
+  }, [currentPath]);
 
   const handleLogout = async () => {
     await signOut();
@@ -231,12 +257,44 @@ export const Sidebar = () => {
             Invoices
           </Link>
           <Link
-            to="/purchases/approval"
+            to="/approval-quotation"
             className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/purchases/approval") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+              currentPath.startsWith("/approval-quotation") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
             }`}
           >
-            Approval
+            Approval Quotation
+          </Link>
+          <Link
+            to="/approval-request"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/approval-request") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Approval Request
+          </Link>
+          <Link
+            to="/approval-shipment"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/approval-shipment") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Approval Shipment
+          </Link>
+          <Link
+            to="/approval-invoice"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/approval-invoice") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Approval Invoice
+          </Link>
+          <Link
+            to="/approval-billing-invoice"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/approval-billing-invoice") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Approval Billing Invoice
           </Link>
         </SubMenu>
 

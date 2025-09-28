@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { FileQuestion, Save, User, Users, Upload, Image } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Header } from "@/components/Header";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -200,12 +201,12 @@ export default function Settings() {
     <div className="flex h-screen bg-background">
       <Sidebar />
       <div className="flex-1 overflow-auto">
-        <div className="bg-gradient-to-b from-[#818CF8] to-[#C084FC] p-6">
-          <h1 className="text-2xl font-semibold text-white">Settings</h1>
-          <p className="text-white/80">Modify your workdesk</p>
-        </div>
+        <Header
+          title="Settings"
+          description="Modify your workdesk"
+        />
         
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="p-6">
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

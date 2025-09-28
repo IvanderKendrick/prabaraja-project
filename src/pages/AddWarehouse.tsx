@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -61,21 +62,9 @@ const AddWarehouse = () => {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 overflow-auto">
-        <div className="px-8 pt-8 flex items-center gap-4">
-          <button
-            onClick={() => navigate("/products")}
-            className="bg-white hover:bg-white/10 rounded-md p-2 mr-4"
-            aria-label="Back to Products"
-          >
-            <ArrowLeft size={24} />
-          </button>
-          <div>
-            <h2 className="text-2xl font-semibold ">Add New Warehouse</h2>
-            <p className="">Fill out the form to add a warehouse.</p>
-          </div>
-        </div>
-        <div className="flex flex-col items-center py-10">
-          <Card className="w-full max-w-lg">
+        <Header title="Add New Warehouse" description="Fill out the form to add a warehouse." />
+        <div className="p-6">
+          <Card className="w-full">
             <CardContent className="p-6">
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>

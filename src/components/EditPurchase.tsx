@@ -1,33 +1,39 @@
 
-import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
-import { PurchaseFormHeader } from "@/components/purchases/PurchaseFormHeader";
+import { Header } from "@/components/Header";
 import { CreatePurchaseForm } from "@/components/create/CreatePurchaseForm";
+import { CreatePurchaseQuotationForm } from "@/components/purchases/forms/CreatePurchaseQuotationForm";
 import { PurchaseType } from "@/types/purchase";
 import { usePurchaseById } from "@/hooks/usePurchases";
 
 const EditPurchase = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [purchaseType, setPurchaseType] = useState<PurchaseType>("invoice");
+  const location = useLocation();
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const typeFromUrl = (searchParams.get("type") as PurchaseType) || "invoice";
+  const [purchaseType, setPurchaseType] = useState<PurchaseType>(typeFromUrl);
   
-  // Extract type from URL params or determine from data
-  const urlParams = new URLSearchParams(window.location.search);
-  const typeFromUrl = urlParams.get("type") as PurchaseType;
-  
-  const { data: purchaseData, isLoading, error } = usePurchaseById(id || "", typeFromUrl || purchaseType);
+  const { data: purchaseData, isLoading, error } = usePurchaseById(id || "", purchaseType);
 
   useEffect(() => {
-    if (purchaseData) {
-      const dataType = purchaseData.type || typeFromUrl || "invoice";
-      // Ensure the type is valid before setting
-      if (["invoice", "offer", "order", "request", "shipment"].includes(dataType)) {
-        setPurchaseType(dataType as PurchaseType);
+    if (purchaseData && purchaseData.type) {
+      const normalized = String(purchaseData.type).toLowerCase();
+      const mapped =
+        normalized === "purchase_order" ? "order" :
+        normalized === "requests" ? "request" :
+        normalized === "invoices" ? "invoice" :
+        normalized === "offers" ? "offer" :
+        normalized === "shipments" ? "shipment" :
+        normalized;
+      if (mapped !== purchaseType && ["invoice","offer","order","request","shipment","quotation"].includes(mapped)) {
+        setPurchaseType(mapped as PurchaseType);
       }
     }
-  }, [purchaseData, typeFromUrl]);
+  }, [purchaseData, purchaseType]);
 
   const handleSubmit = async (formData: any) => {
     try {
@@ -72,18 +78,42 @@ const EditPurchase = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 overflow-auto">
-        <PurchaseFormHeader purchaseType={purchaseType} />
+        <Header
+          title={`Edit ${
+            purchaseType === "quotation"
+              ? "Purchase Quotation"
+              : purchaseType.charAt(0).toUpperCase() + purchaseType.slice(1)
+          }`}
+          description={
+            purchaseType === "invoice"
+              ? "Update details of your purchase invoice"
+              : purchaseType === "shipment"
+              ? "Update shipment record for your purchase"
+              : purchaseType === "order"
+              ? "Update your purchase order"
+              : purchaseType === "offer"
+              ? "Update your purchase offer"
+              : purchaseType === "request"
+              ? "Update your purchase request"
+              : "Update your purchase quotation"
+          }
+        />
 
-        <div className="p-6 max-w-5xl mx-auto">
-          <CreatePurchaseForm 
-            purchaseType={purchaseType}
-            setPurchaseType={setPurchaseType}
-            onSubmit={handleSubmit}
-            isLoading={false}
-          />
+        <div className="p-6">
+          {purchaseType === "quotation" ? (
+            <CreatePurchaseQuotationForm onSubmit={handleSubmit} isReadOnlyTypeAndNumber />
+          ) : (
+            <CreatePurchaseForm
+              purchaseType={purchaseType}
+              setPurchaseType={setPurchaseType}
+              onSubmit={handleSubmit}
+              isLoading={false}
+              isReadOnlyTypeAndNumber
+            />
+          )}
         </div>
       </div>
     </div>

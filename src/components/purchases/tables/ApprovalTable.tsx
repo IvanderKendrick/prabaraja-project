@@ -14,7 +14,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { OfferPurchase } from "@/types/purchase";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,11 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useOffersAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
+import { useApprovalAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
 import { Pagination } from "@/components/Pagination";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
 
-interface OffersTableProps {
+interface ApprovalTableProps {
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
   onApprove?: (id: string) => void;
@@ -38,40 +37,53 @@ interface OffersTableProps {
 
 const getStatusBadgeProps = (status: string) => {
   switch (status.toLowerCase()) {
-    case "completed":
+    case "approved":
       return "bg-green-100 text-green-800 border-green-200";
     case "pending":
       return "bg-amber-100 text-amber-800 border-amber-200";
-    case "cancelled":
+    case "rejected":
       return "bg-red-100 text-red-800 border-red-200";
-    case "accepted":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getUrgencyBadgeProps = (urgency: string) => {
+  switch (urgency.toLowerCase()) {
+    case "high":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "medium":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "low":
+      return "bg-green-100 text-green-800 border-green-200";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): OfferPurchase[] => {
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]) => {
   return apiData.map(item => ({
     id: item.id,
     date: new Date(item.date),
     number: item.number,
-    expiryDate: item.expiry_date ? new Date(item.expiry_date) : undefined,
+    dueDate: item.due_date ? new Date(item.due_date) : undefined,
     status: item.status as any,
     amount: item.grand_total || item.amount,
-    type: "offer" as const,
+    type: "approval" as const,
     items: item.items || [],
-    discountTerms: (item as any).discount_terms || ''
+    requestedBy: (item as any).requested_by || '',
+    urgency: (item as any).urgency || 'Medium',
+    vendorName: (item as any).vendor_name || ''
   }));
 };
 
-export function OffersTable({ 
+export function ApprovalTable({ 
   onDelete, 
   onEdit,
   onApprove,
   onReject
-}: OffersTableProps) {
+}: ApprovalTableProps) {
   const {
     data: apiData,
     isLoading,
@@ -83,28 +95,28 @@ export function OffersTable({
     handlePageChange,
     handleLimitChange,
     refresh
-  } = useOffersAPI();
+  } = useApprovalAPI();
 
   // Transform API data to table format
-  const offers = transformAPIDataToTable(apiData);
+  const approvals = transformAPIDataToTable(apiData);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
+  const [approvalToDelete, setApprovalToDelete] = useState<string | null>(null);
 
   const handleDeleteClick = (id: string) => {
-    setOfferToDelete(id);
+    setApprovalToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (offerToDelete) {
-      onDelete?.(offerToDelete);
+    if (approvalToDelete) {
+      onDelete?.(approvalToDelete);
     }
     setDeleteDialogOpen(false);
   };
 
   const cancelDelete = () => {
-    setOfferToDelete(null);
+    setApprovalToDelete(null);
     setDeleteDialogOpen(false);
   };
 
@@ -115,10 +127,11 @@ export function OffersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Offer #</TableHead>
-              <TableHead>Expiry</TableHead>
-              <TableHead>Discount Terms</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Number</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Requested By</TableHead>
+              <TableHead>Urgency</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
@@ -126,10 +139,10 @@ export function OffersTable({
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-12">
+              <TableCell colSpan={8} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">Loading offers...</span>
+                  <span className="text-sm text-gray-500">Loading approvals...</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -146,10 +159,11 @@ export function OffersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Offer #</TableHead>
-              <TableHead>Expiry</TableHead>
-              <TableHead>Discount Terms</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Number</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Requested By</TableHead>
+              <TableHead>Urgency</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
@@ -157,7 +171,7 @@ export function OffersTable({
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-12">
+              <TableCell colSpan={8} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
@@ -184,49 +198,51 @@ export function OffersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Offer #</TableHead>
-              <TableHead>Expiry</TableHead>
-              <TableHead>Discount Terms</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Number</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Requested By</TableHead>
+              <TableHead>Urgency</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {offers.length === 0 ? (
+            {approvals.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                  No offers found
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                  No approvals found
                 </TableCell>
               </TableRow>
             ) : (
-              offers.map((offer) => (
-                <TableRow key={offer.id}>
+              approvals.map((approval) => (
+                <TableRow key={approval.id}>
                   <TableCell className="font-medium">
-                    {offer.date.toLocaleDateString('en-GB')}
+                    {approval.date.toLocaleDateString('en-GB')}
                   </TableCell>
                   <TableCell>
                     <button 
-                      onClick={() => window.location.href = `/offer/${offer.id}`}
+                      onClick={() => window.location.href = `/approval/${approval.id}`}
                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                     >
-                      {offer.number}
+                      {approval.number}
                     </button>
                   </TableCell>
-                  <TableCell className={cn({
-                    "text-red-600 font-medium": offer.expiryDate && new Date() > offer.expiryDate
-                  })}>
-                    {offer.expiryDate ? offer.expiryDate.toLocaleDateString('en-GB') : "-"}
-                  </TableCell>
-                  <TableCell>{offer.discountTerms}</TableCell>
+                  <TableCell>{approval.vendorName}</TableCell>
+                  <TableCell>{approval.requestedBy}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusBadgeProps(offer.status)}>
-                      {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
+                    <Badge className={getUrgencyBadgeProps(approval.urgency)}>
+                      {approval.urgency}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusBadgeProps(approval.status)}>
+                      {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
-                    Rp {formatPriceWithSeparator(offer.amount)}
+                    Rp {formatPriceWithSeparator(approval.amount)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -237,21 +253,21 @@ export function OffersTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white">
-                        <DropdownMenuItem onClick={() => window.location.href = `/offer/${offer.id}`}>
+                        <DropdownMenuItem onClick={() => window.location.href = `/approval/${approval.id}`}>
                           <Eye className="mr-2 h-4 w-4" />
                           View
                         </DropdownMenuItem>
-                        {offer.status === "pending" && onApprove && onReject && (
+                        {approval.status === "pending" && onApprove && onReject && (
                           <>
                             <DropdownMenuItem 
-                              onClick={() => onApprove(offer.id)}
+                              onClick={() => onApprove(approval.id)}
                               className="text-green-600"
                             >
                               <Check className="mr-2 h-4 w-4" />
                               Approve
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => onReject(offer.id)}
+                              onClick={() => onReject(approval.id)}
                               className="text-red-600"
                             >
                               <X className="mr-2 h-4 w-4" />
@@ -260,14 +276,14 @@ export function OffersTable({
                           </>
                         )}
                         {onEdit && (
-                          <DropdownMenuItem onClick={() => onEdit(offer.id)}>
+                          <DropdownMenuItem onClick={() => onEdit(approval.id)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                         )}
                         {onDelete && (
                           <DropdownMenuItem 
-                            onClick={() => handleDeleteClick(offer.id)}
+                            onClick={() => handleDeleteClick(approval.id)}
                             className="text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -285,7 +301,7 @@ export function OffersTable({
       </div>
       
       {/* Pagination */}
-      {offers.length > 0 && (
+      {approvals.length > 0 && (
         <Pagination
           currentPage={page}
           totalPages={totalPages}
@@ -301,9 +317,9 @@ export function OffersTable({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this offer?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure you want to delete this approval?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the offer.
+              This action cannot be undone. This will permanently delete the approval.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

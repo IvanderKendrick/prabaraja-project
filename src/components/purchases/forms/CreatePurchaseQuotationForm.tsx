@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CalendarDays, FileText, User, Package, Plus, Building2, Calculator, Receipt, Truck, Tag, AlertCircle, Quote, Loader2 } from "lucide-react";
+import { CalendarDays, FileText, User, Package, Plus, Building2, Calculator, Receipt, Truck, Tag, AlertCircle, Quote, Loader2, Upload } from "lucide-react";
 import { PurchaseType } from "@/types/purchase";
 import { toast } from "sonner";
 import { formatInputCurrency, parseInputCurrency, formatCurrency } from "@/lib/utils";
@@ -15,11 +15,13 @@ import { useContacts, useCreateContact } from "@/hooks/useContacts";
 import { SalesTaxCalculation } from "@/components/sales/SalesTaxCalculation";
 import { PurchaseInformationForm } from "@/components/purchases/PurchaseInformationForm";
 import { PurchaseItemsForm } from "@/components/purchases/PurchaseItemsForm";
+import axios from "axios";
 
 interface QuotationItem {
   id: string;
   name: string;
   quantity: number;
+  unit: "kg" | "buah";
   price: number;
   discount?: number;
 }
@@ -28,9 +30,10 @@ type QuotationStatus = "Unpaid" | "Paid" | "Awaiting Payment" | "Late Payment";
 
 interface CreatePurchaseQuotationFormProps {
   onSubmit: (data: any) => void;
+  isReadOnlyTypeAndNumber?: boolean;
 }
 
-export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotationFormProps) {
+export function CreatePurchaseQuotationForm({ onSubmit, isReadOnlyTypeAndNumber = false }: CreatePurchaseQuotationFormProps) {
   const navigate = useNavigate();
   const { data: contacts } = useContacts();
   const createContactMutation = useCreateContact();
@@ -49,6 +52,7 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
     id: Math.random().toString(36).substr(2, 9), 
     name: '', 
     quantity: 1, 
+    unit: "kg",
     price: 0,
     discount: 0
   }]);
@@ -86,11 +90,15 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
     grandTotal: 0
   });
 
+  // File upload state
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Generate quotation number on component mount
   useEffect(() => {
     const timestamp = Date.now();
     const randomNum = Math.floor(Math.random() * 1000);
-    const generatedNumber = `QUO-${timestamp}${randomNum}`;
+    const generatedNumber = `QUO-`;
     setNumber(generatedNumber);
     
     // Set current date as default
@@ -106,6 +114,20 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
 
   // Get vendor options
   const vendorContacts = contacts?.filter(contact => contact.category === "Vendor") || [];
+
+  // Get auth token helper function
+  const getAuthToken = () => {
+    const authDataRaw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
+    if (!authDataRaw) {
+      throw new Error("No access token found in localStorage");
+    }
+    const authData = JSON.parse(authDataRaw);
+    const token = authData.access_token;
+    if (!token) {
+      throw new Error("Access token missing in parsed auth data");
+    }
+    return token;
+  };
   
   // Type configuration
   const typeConfig = {
@@ -191,6 +213,7 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
       id: Date.now().toString(),
       name: '',
       quantity: 1,
+      unit: 'kg',
       price: 0,
       discount: 0
     };
@@ -245,64 +268,95 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
       return;
     }
 
-    try {
-      const quotationData: Record<string, any> = {
-        type: purchaseType,
-        date,
-        dueDate,
-        status: status as "pending" | "completed" | "cancelled" | "Half-paid",
-        approver,
-        tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        items,
-        taxCalculationMethod: false,
-        ppnPercentage: 11,
-        pphPercentage: 2,
-        pphType: "",
-        dpp: taxData.dpp,
-        ppn: taxData.ppn,
-        pph: taxData.pph,
-        grandTotal: taxData.grandTotal || calculateSubtotal(),
-        // Quotation-specific fields
-        number: number,
-        vendorName: selectedVendorId ? vendorContacts.find(v => v.id === selectedVendorId)?.name : vendorName,
-        validUntil,
-        terms: terms || null,
-        taxData
-      };
+    setIsSubmitting(true);
 
-      // Add type-specific fields based on purchaseType (following CreatePurchaseForm pattern)
-      switch (purchaseType) {
-        case "request":
-          quotationData.requestedBy = requestedBy || "Unknown";
-          quotationData.urgency = urgency;
-          break;
-        case "offer":
-          quotationData.expiryDate = expiryDate;
-          quotationData.discountTerms = discountTerms;
-          break;
-        case "order":
-          quotationData.orderDate = orderDate;
-          break;
-        case "shipment":
-          quotationData.trackingNumber = trackingNumber;
-          quotationData.carrier = carrier;
-          quotationData.shippingDate = shippingDate;
-          break;
+    try {
+      const token = getAuthToken();
+      
+      // Create FormData for multipart request
+      const formData = new FormData();
+      
+      // Add all required fields
+      formData.append('action', 'addNewQuotation');
+      formData.append('type', 'Quotation');
+      formData.append('quotation_date', date);
+      formData.append('request_by', requestedBy || '');
+      formData.append('urgency', urgency);
+      formData.append('due_date', dueDate);
+      formData.append('status', status);
+      formData.append('tags', JSON.stringify(tags.split(',').map(tag => tag.trim()).filter(tag => tag)));
+      // Map items to include unit in qty
+      const mappedItems = items.map((item) => ({
+        item_name: item.name,
+        qty: `${item.quantity} ${item.unit}`,
+        price: item.price,
+        discount: item.discount || 0,
+      }));
+      formData.append('items', JSON.stringify(mappedItems));
+      formData.append('grand_total', (taxData.grandTotal || calculateSubtotal()).toString());
+      formData.append('memo', terms || '');
+      
+      // Add file if selected
+      if (attachmentFile) {
+        formData.append('attachment_url', attachmentFile);
+      }
+      
+      // Vendor information
+      const finalVendorName = selectedVendorId ? vendorContacts.find(v => v.id === selectedVendorId)?.name : vendorName;
+      formData.append('vendor_name', finalVendorName || '');
+      
+      // Get vendor address and phone from selected vendor
+      const selectedVendor = vendorContacts.find(v => v.id === selectedVendorId);
+      formData.append('vendor_address', selectedVendor?.address || '');
+      formData.append('vendor_phone', selectedVendor?.phone || '');
+      
+      formData.append('start_date', date);
+      formData.append('tax_details', JSON.stringify(taxData));
+      formData.append('tax_method', 'false'); // Based on existing code
+      formData.append('dpp', taxData.dpp.toString());
+      formData.append('ppn', taxData.ppn.toString());
+      formData.append('pph', taxData.pph.toString());
+      formData.append('valid_until', validUntil);
+      formData.append('terms', terms || '');
+      formData.append('total', (taxData.grandTotal || calculateSubtotal()).toString());
+      formData.append('number', number);
+
+      // Make POST request to the API
+      const response = await axios.post(
+        'https://pbw-backend-api.vercel.app/api/purchases',
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Don't set Content-Type, let axios handle multipart boundary
+          },
+        }
+      );
+
+      if (response.data && !response.data.error) {
+        toast.success("Purchase quotation created successfully!");
+        navigate("/purchases");
+      } else {
+        throw new Error(response.data?.message || 'Failed to create purchase quotation');
       }
 
-      await onSubmit(quotationData);
-      toast.success("Purchase created successfully!");
-      navigate("/purchases");
-
     } catch (error) {
-      console.error('Error creating purchase:', error);
-      toast.error("Failed to create purchase. Please try again.");
+      console.error('Error creating purchase quotation:', error);
+      
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to create purchase quotation';
+        toast.error(errorMessage);
+      } else {
+        toast.error("Failed to create purchase quotation. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <form onSubmit={handleSubmit} className="space-y-6 p-6 max-w-6xl mx-auto">
+    <div className="">
+      <form onSubmit={handleSubmit} className="space-y-6">
 
         <PurchaseInformationForm
           purchaseType={purchaseType}
@@ -316,6 +370,7 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
           setDate={setDate}
           number={number}
           setNumber={setNumber}
+          isReadOnlyTypeAndNumber={isReadOnlyTypeAndNumber}
           approver={approver}
           setApprover={setApprover}
           dueDate={dueDate}
@@ -547,6 +602,33 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
           </CardContent>
         </Card>
 
+        {/* File Upload */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <Upload className="h-5 w-5 text-gray-600" />
+              Attachment
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            <div>
+              <Label htmlFor="attachment" className="text-sm font-medium text-gray-700">Upload File (Optional)</Label>
+              <Input
+                id="attachment"
+                type="file"
+                onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                className="mt-1"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              />
+              {attachmentFile && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Selected: {attachmentFile.name}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-6 border-t">
           <Button
@@ -559,10 +641,15 @@ export function CreatePurchaseQuotationForm({ onSubmit }: CreatePurchaseQuotatio
           </Button>
           <Button 
             type="submit" 
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || isSubmitting}
             className="px-8 py-2"
           >
-            {purchaseType === "quotation" ? (
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : purchaseType === "quotation" ? (
               <>
                 <Quote className="mr-2 h-4 w-4" />
                 Create Quotation

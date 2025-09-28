@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
-import { Circle, MoreVertical, Edit, Trash, Plus, Search } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { MoreHorizontal, Edit, Trash2, Loader2, AlertCircle, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -13,8 +12,7 @@ import {
 } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { OrderPurchase } from "@/types/purchase";
 import {
@@ -27,34 +25,63 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useOrdersAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
+import { Pagination } from "@/components/Pagination";
+import { formatPriceWithSeparator } from "@/utils/salesUtils";
 
 interface OrdersTableProps {
-  orders: OrderPurchase[];
-  onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
-export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
-  const navigate = useNavigate();
+const getStatusBadgeProps = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "completed":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "pending":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    case "cancelled":
+      return "bg-red-100 text-red-800 border-red-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+// Transform API data to table format
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): OrderPurchase[] => {
+  return apiData.map(item => ({
+    id: item.id,
+    date: new Date(item.date),
+    number: item.number,
+    orderDate: item.orders_date ? new Date(item.orders_date) : new Date(item.date),
+    dueDate: item.due_date ? new Date(item.due_date) : undefined,
+    status: item.status as any,
+    amount: item.grand_total || item.amount,
+    type: "order" as const,
+    items: item.items || [],
+    discountTerms: (item as any).discount_terms || ''
+  }));
+};
+
+export function OrdersTable({ onDelete, onEdit }: OrdersTableProps) {
+  const {
+    data: apiData,
+    isLoading,
+    error,
+    page,
+    limit,
+    totalPages,
+    total,
+    handlePageChange,
+    handleLimitChange,
+    refresh
+  } = useOrdersAPI();
+
+  // Transform API data to table format
+  const orders = transformAPIDataToTable(apiData);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
-  const [searchValue, setSearchValue] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  // Filter orders based on search and status
-  const filteredOrders = orders.filter(order => {
-    // Filter by search term if provided
-    const matchesSearch = searchValue
-      ? order.number.toLowerCase().includes(searchValue.toLowerCase())
-      : true;
-
-    // Filter by status if not "all"
-    const matchesStatus = statusFilter === "all"
-      ? true
-      : order.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
 
   const handleDeleteClick = (id: string) => {
     setOrderToDelete(id);
@@ -63,7 +90,7 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
 
   const confirmDelete = () => {
     if (orderToDelete) {
-      onDelete(orderToDelete);
+      onDelete?.(orderToDelete);
     }
     setDeleteDialogOpen(false);
   };
@@ -73,9 +100,10 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
     setDeleteDialogOpen(false);
   };
 
-  return (
-    <>
-      <div className="border rounded-lg">
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -85,29 +113,98 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
               <TableHead>Discount Terms</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredOrders.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-12">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                  <span className="text-sm text-gray-500">Loading orders...</span>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order Date</TableHead>
+              <TableHead>Order #</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Discount Terms</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-12">
+                <div className="flex flex-col items-center gap-2">
+                  <AlertCircle className="h-6 w-6 text-red-500" />
+                  <span className="text-sm text-red-600">{error}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={refresh}
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order Date</TableHead>
+              <TableHead>Order #</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Discount Terms</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                  There haven't been any Orders added to the table yet.
+                  No orders found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredOrders.map((order) => (
+              orders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell>
-                    {order.orderDate ? format(order.orderDate, "dd/MM/yyyy") : "-"}
+                  <TableCell className="font-medium">
+                    {order.orderDate.toLocaleDateString('en-GB')}
                   </TableCell>
                   <TableCell>
-                    <Link
-                      to={`/order/${order.id}`}
-                      className="text-indigo-600 hover:underline"
+                    <button 
+                      onClick={() => window.location.href = `/order/${order.id}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                     >
                       {order.number}
-                    </Link>
+                    </button>
                   </TableCell>
                   <TableCell>{order.items.length}</TableCell>
                   <TableCell>
@@ -116,51 +213,41 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className={cn(
-                      "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium",
-                      {
-                        "bg-yellow-100 text-yellow-800": order.status === "pending",
-                        "bg-green-100 text-green-800": order.status === "completed",
-                        "bg-red-100 text-red-800": order.status === "cancelled",
-                      }
-                    )}>
-                      <Circle className={cn(
-                        "h-2 w-2",
-                        {
-                          "fill-yellow-500": order.status === "pending",
-                          "fill-green-500": order.status === "completed",
-                          "fill-red-500": order.status === "cancelled",
-                        }
-                      )} />
+                    <Badge className={getStatusBadgeProps(order.status)}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
+                    </Badge>
                   </TableCell>
-                  <TableCell>
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      minimumFractionDigits: 0,
-                    }).format(order.amount)}
+                  <TableCell className="font-medium">
+                    Rp {formatPriceWithSeparator(order.amount)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => onEdit(order.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
+                      <DropdownMenuContent align="end" className="bg-white">
+                        <DropdownMenuItem onClick={() => window.location.href = `/order/${order.id}`}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteClick(order.id)}
-                          className="text-red-600"
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
+                        {onEdit && (
+                          <DropdownMenuItem onClick={() => onEdit(order.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                        )}
+                        {onDelete && (
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(order.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -170,7 +257,21 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
           </TableBody>
         </Table>
       </div>
+      
+      {/* Pagination */}
+      {orders.length > 0 && (
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={apiData.length * totalPages}
+          itemsPerPage={limit}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleLimitChange}
+          itemsPerPageOptions={[5, 10, 20, 50]}
+        />
+      )}
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -190,6 +291,6 @@ export function OrdersTable({ orders, onDelete, onEdit }: OrdersTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }

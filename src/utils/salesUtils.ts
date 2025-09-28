@@ -8,10 +8,14 @@ export const getLatestInvoiceNumber = () => {
 };
 
 // Function to format price with Indonesian locale
-export const formatPriceWithSeparator = (price: number) => {
+export const formatPriceWithSeparator = (price?: number | null): string => {
+  if (typeof price !== 'number' || isNaN(price)) {
+    return '-'; // Fallback for invalid input
+  }
+
   return price.toLocaleString('id-ID', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 };
 

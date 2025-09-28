@@ -36,6 +36,13 @@ import NotFound from "./pages/NotFound";
 import { ReceivePaymentPage } from "./pages/ReceivePaymentPage";
 import Neraca from "./components/reports/neraca";
 
+// Import approval pages
+import ApprovalQuotation from "./pages/ApprovalQuotation";
+import ApprovalRequest from "./pages/ApprovalRequest";
+import ApprovalShipment from "./pages/ApprovalShipment";
+import ApprovalInvoice from "./pages/ApprovalInvoice";
+import ApprovalBillingInvoice from "./pages/ApprovalBillingInvoice";
+
 // Import detail components
 import InvoiceDetail from "./components/detail/InvoiceDetail";
 import SalesInvoiceDetail from "./components/detail/SalesInvoiceDetail";
@@ -50,6 +57,7 @@ import { PurchaseQuotationDetail } from "./components/detail/PurchaseQuotationDe
 
 // Import create components
 import CreateNewPurchase from "./components/create/CreateNewPurchase";
+import EditPurchase from "./components/EditPurchase";
 import CreateNewSales from "./components/create/CreateNewSales";
 import CreateExpense from "./components/create/CreateExpense";
 
@@ -228,6 +236,11 @@ function App() {
                   <CreateNewPurchase />
                 </ProtectedRoute>
               } />
+              <Route path="/edit-purchase/:id" element={
+                <ProtectedRoute>
+                  <EditPurchase />
+                </ProtectedRoute>
+              } />
               
               <Route path="/create-sales" element={
                 <ProtectedRoute>
@@ -299,6 +312,37 @@ function App() {
               <Route path="/request/:id" element={
                 <ProtectedRoute>
                   <RequestDetail />
+                </ProtectedRoute>
+              } />
+              
+              {/* Approval routes */}
+              <Route path="/approval-quotation" element={
+                <ProtectedRoute>
+                  <ApprovalQuotation />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/approval-request" element={
+                <ProtectedRoute>
+                  <ApprovalRequest />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/approval-shipment" element={
+                <ProtectedRoute>
+                  <ApprovalShipment />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/approval-invoice" element={
+                <ProtectedRoute>
+                  <ApprovalInvoice />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/approval-billing-invoice" element={
+                <ProtectedRoute>
+                  <ApprovalBillingInvoice />
                 </ProtectedRoute>
               } />
               

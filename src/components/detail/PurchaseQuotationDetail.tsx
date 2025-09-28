@@ -4,94 +4,120 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Calendar, FileText, User, Building2, Calculator, Package } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, User, Building2, Calculator, Package, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { usePurchaseQuotationDetail } from "@/hooks/usePurchaseQuotationDetail";
 
 interface QuotationItem {
-  id: string;
-  name: string;
-  quantity: number;
+  item_name: string;
+  qty: number;
   price: number;
   discount?: number;
+}
+
+interface TaxDetails {
+  dpp?: number;
+  ppn?: number;
+  pph?: number;
+  grandTotal?: number;
 }
 
 interface PurchaseQuotationData {
   id: string;
   number: string;
-  quotationDate: string;
-  validUntil: string;
-  vendorName: string;
+  quotation_date: string;
+  valid_until: string;
+  vendor_name: string;
+  vendor_address?: string;
+  vendor_phone?: string;
   status: string;
   items: QuotationItem[];
   terms?: string;
-  subtotal: number;
-  discountAmount: number;
-  taxAmount: number;
+  memo?: string;
+  tax_details?: TaxDetails;
   total: number;
+  grand_total: number;
+  attachment_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
-
-// Mock data for demonstration - in real app, this would come from a hook
-const mockQuotations: Record<string, PurchaseQuotationData> = {
-  "1": {
-    id: "1",
-    number: "PQ-001",
-    quotationDate: "2024-01-15",
-    validUntil: "2024-02-15",
-    vendorName: "ABC Supplier Ltd",
-    status: "Pending",
-    items: [
-      { id: "1", name: "Office Supplies", quantity: 10, price: 50000, discount: 5 },
-      { id: "2", name: "Computer Equipment", quantity: 2, price: 2500000, discount: 0 }
-    ],
-    terms: "Payment terms: Net 30 days",
-    subtotal: 5500000,
-    discountAmount: 25000,
-    taxAmount: 547500,
-    total: 6022500
-  }
-};
 
 export function PurchaseQuotationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
+  const { 
+    data: quotation, 
+    isLoading, 
+    error 
+  } = usePurchaseQuotationDetail(id);
 
   const handleGoBack = () => {
     navigate(-1);
   };
 
-  if (!id) {
+  const handleDownloadAttachment = () => {
+    if (quotation?.attachment_url) {
+      // Open attachment in new tab
+      window.open(quotation.attachment_url, '_blank');
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Quotation not found</h2>
-          <Button onClick={handleGoBack} className="mt-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Go Back
-          </Button>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+              <span className="text-sm text-gray-500">Loading quotation details...</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  const quotation = mockQuotations[id];
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto p-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Quotation</h2>
+            <p className="text-gray-600 mb-4">{error.message}</p>
+            <Button onClick={handleGoBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // Data not found
   if (!quotation) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Quotation not found</h2>
-          <Button onClick={handleGoBack} className="mt-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Go Back
-          </Button>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto p-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Data not found</h2>
+            <p className="text-gray-600 mb-4">The quotation you're looking for doesn't exist.</p>
+            <Button onClick={handleGoBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const isExpired = new Date() > new Date(quotation.validUntil);
-  const daysUntilExpiry = Math.ceil((new Date(quotation.validUntil).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+  const isExpired = new Date() > new Date(quotation.valid_until);
+  const daysUntilExpiry = Math.ceil((new Date(quotation.valid_until).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,12 +178,13 @@ export function PurchaseQuotationDetail() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Quotation Date</Label>
-                    <p className="text-sm">{new Date(quotation.quotationDate).toLocaleDateString('en-GB')}</p>
+                    <p className="text-sm">{new Date(quotation.quotation_date).toLocaleDateString('en-GB')}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Valid Until</Label>
                     <p className={`text-sm ${isExpired ? 'text-red-600 font-medium' : ''}`}>
-                      {new Date(quotation.validUntil).toLocaleDateString('en-GB')}
+                      {new Date(quotation.valid_until).toLocaleDateString('en-GB')}
+                      {isExpired && <span className="ml-2">(Expired)</span>}
                     </p>
                   </div>
                 </div>
@@ -172,11 +199,23 @@ export function PurchaseQuotationDetail() {
                   Vendor Information
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Vendor Name</Label>
-                  <p className="text-sm font-semibold">{quotation.vendorName}</p>
+                  <p className="text-sm font-semibold">{quotation.vendor_name}</p>
                 </div>
+                {quotation.vendor_address && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Address</Label>
+                    <p className="text-sm">{quotation.vendor_address}</p>
+                  </div>
+                )}
+                {quotation.vendor_phone && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Phone</Label>
+                    <p className="text-sm">{quotation.vendor_phone}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -201,21 +240,35 @@ export function PurchaseQuotationDetail() {
                       </tr>
                     </thead>
                     <tbody>
-                      {quotation.items.map((item) => {
-                        const itemTotal = item.quantity * item.price;
-                        const discountAmount = itemTotal * (item.discount || 0) / 100;
-                        const finalTotal = itemTotal - discountAmount;
-                        
-                        return (
-                          <tr key={item.id} className="border-b">
-                            <td className="py-3 font-medium">{item.name}</td>
-                            <td className="text-right py-3">{item.quantity}</td>
-                            <td className="text-right py-3">{formatCurrency(item.price)}</td>
-                            <td className="text-right py-3">{item.discount || 0}%</td>
-                            <td className="text-right py-3 font-semibold">{formatCurrency(finalTotal)}</td>
-                          </tr>
-                        );
-                      })}
+                      {quotation.items && quotation.items.length > 0 ? (
+                        quotation.items.map((item: any, index) => {
+                          // Handle different field names for items
+                          const itemName = item.item_name || item.name || item.description || 'Unknown Item';
+                          const quantity = item.qty || item.quantity || item.qty_per_unit || 0;
+                          const price = item.price || item.unit_price || item.price_per_unit || 0;
+                          const discount = item.discount || 0;
+                          
+                          const itemTotal = quantity * price;
+                          const discountAmount = itemTotal * discount / 100;
+                          const finalTotal = itemTotal - discountAmount;
+                          
+                          return (
+                            <tr key={index} className="border-b">
+                              <td className="py-3 font-medium">{itemName}</td>
+                              <td className="text-right py-3">{quantity}</td>
+                              <td className="text-right py-3">{formatCurrency(price)}</td>
+                              <td className="text-right py-3">{discount}%</td>
+                              <td className="text-right py-3 font-semibold">{formatCurrency(finalTotal)}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="py-4 text-center text-gray-500">
+                            No items in this quotation
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -223,13 +276,46 @@ export function PurchaseQuotationDetail() {
             </Card>
 
             {/* Terms and Conditions */}
-            {quotation.terms && (
+            {(quotation.terms || quotation.memo) && (
               <Card>
                 <CardHeader>
                   <CardTitle>Terms & Conditions</CardTitle>
                 </CardHeader>
+                <CardContent className="space-y-4">
+                  {quotation.terms && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Terms</Label>
+                      <p className="text-sm text-gray-700 mt-1">{quotation.terms}</p>
+                    </div>
+                  )}
+                  {quotation.memo && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Memo</Label>
+                      <p className="text-sm text-gray-700 mt-1">{quotation.memo}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Attachment */}
+            {quotation.attachment_url && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Download className="h-5 w-5" />
+                    Attachment
+                  </CardTitle>
+                </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-700">{quotation.terms}</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDownloadAttachment}
+                    className="w-full"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Attachment
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -248,20 +334,34 @@ export function PurchaseQuotationDetail() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Subtotal</span>
-                  <span className="text-sm font-medium">{formatCurrency(quotation.subtotal)}</span>
+                  <span className="text-sm font-medium">{formatCurrency(quotation.total)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Discount</span>
-                  <span className="text-sm font-medium text-red-600">-{formatCurrency(quotation.discountAmount)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Tax</span>
-                  <span className="text-sm font-medium">{formatCurrency(quotation.taxAmount)}</span>
-                </div>
+                {quotation.tax_details && typeof quotation.tax_details === 'object' && (
+                  <>
+                    {(quotation.tax_details as TaxDetails).dpp && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">DPP</span>
+                        <span className="text-sm font-medium">{formatCurrency((quotation.tax_details as TaxDetails).dpp!)}</span>
+                      </div>
+                    )}
+                    {(quotation.tax_details as TaxDetails).ppn && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">PPN</span>
+                        <span className="text-sm font-medium">{formatCurrency((quotation.tax_details as TaxDetails).ppn!)}</span>
+                      </div>
+                    )}
+                    {(quotation.tax_details as TaxDetails).pph && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">PPH</span>
+                        <span className="text-sm font-medium">{formatCurrency((quotation.tax_details as TaxDetails).pph!)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <Separator />
                 <div className="flex justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-semibold text-lg">{formatCurrency(quotation.total)}</span>
+                  <span className="font-semibold">Grand Total</span>
+                  <span className="font-semibold text-lg">{formatCurrency(quotation.grand_total)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -279,7 +379,7 @@ export function PurchaseQuotationDetail() {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Valid Until</span>
                     <span className={`text-sm font-medium ${isExpired ? 'text-red-600' : ''}`}>
-                      {new Date(quotation.validUntil).toLocaleDateString('en-GB')}
+                      {new Date(quotation.valid_until).toLocaleDateString('en-GB')}
                     </span>
                   </div>
                   {!isExpired && (

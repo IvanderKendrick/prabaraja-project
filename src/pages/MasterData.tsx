@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,12 +113,10 @@ const MasterData = () => {
     <div className="flex h-screen w-full">
       <Sidebar />
       <div className="flex-1 overflow-auto">
-        <div className="px-8 pt-8">
-          <h1 className="text-2xl font-semibold">Chart of Accounts</h1>
-          <p className="">
-            Manage your chart of accounts and reference information
-          </p>
-        </div>
+        <Header
+          title="Chart of Accounts"
+          description="Manage your chart of accounts and reference information"
+        />
 
         <div className="p-6">
           {/* Action Buttons */}

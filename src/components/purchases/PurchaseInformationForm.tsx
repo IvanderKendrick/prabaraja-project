@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,14 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PurchaseType, PurchaseStatus, PurchasePriority } from "@/types/purchase";
+import {
+  PurchaseType,
+  PurchaseStatus,
+  PurchasePriority,
+} from "@/types/purchase";
 import {
   FileText,
   Truck,
   Package,
   Tag,
   AlertCircle,
-  Quote
+  Quote,
 } from "lucide-react";
 
 interface PurchaseInformationFormProps {
@@ -26,6 +29,8 @@ interface PurchaseInformationFormProps {
   setDate: (date: string) => void;
   number: string;
   setNumber: (number: string) => void;
+  // When true, disable editing of Type and Number (for Edit pages)
+  isReadOnlyTypeAndNumber?: boolean;
   approver: string;
   setApprover: (approver: string) => void;
   dueDate: string;
@@ -34,7 +39,7 @@ interface PurchaseInformationFormProps {
   setStatus: (status: PurchaseStatus) => void;
   tags: string;
   setTags: (tags: string) => void;
-  
+
   // Type-specific fields
   trackingNumber?: string;
   setTrackingNumber?: (trackingNumber: string) => void;
@@ -61,6 +66,7 @@ export function PurchaseInformationForm({
   setDate,
   number,
   setNumber,
+  isReadOnlyTypeAndNumber = false,
   approver,
   setApprover,
   dueDate,
@@ -89,53 +95,72 @@ export function PurchaseInformationForm({
 }: PurchaseInformationFormProps) {
   // Icon and color configuration for purchase types
   const typeConfig = {
-    invoice: { 
-      icon: <FileText className="h-4 w-4 text-purple-500" />, 
+    invoice: {
+      icon: <FileText className="h-4 w-4 text-purple-500" />,
       color: "text-black-500",
       bgColor: "bg-purple-50",
-      label: "Invoice" 
+      label: "Invoice",
     },
-    shipment: { 
-      icon: <Truck className="h-4 w-4 text-orange-500" />, 
+    shipment: {
+      icon: <Truck className="h-4 w-4 text-orange-500" />,
       color: "text-black-500",
       bgColor: "bg-orange-50",
-      label: "Shipment" 
+      label: "Shipment",
     },
-    order: { 
-      icon: <Package className="h-4 w-4 text-blue-500" />, 
+    order: {
+      icon: <Package className="h-4 w-4 text-blue-500" />,
       color: "text-black-500",
       bgColor: "bg-blue-50",
-      label: "Order" 
+      label: "Order",
     },
-    offer: { 
-      icon: <Tag className="h-4 w-4 text-green-500" />, 
+    offer: {
+      icon: <Tag className="h-4 w-4 text-green-500" />,
       color: "text-black-500",
       bgColor: "bg-green-50",
-      label: "Offer" 
+      label: "Offer",
     },
-    request: { 
-      icon: <AlertCircle className="h-4 w-4 text-pink-500" />, 
+    request: {
+      icon: <AlertCircle className="h-4 w-4 text-pink-500" />,
       color: "text-black-500",
       bgColor: "bg-pink-50",
-      label: "Request" 
+      label: "Request",
     },
-    quotation: { 
-      icon: <Quote className="h-4 w-4 text-cyan-500" />, 
+    quotation: {
+      icon: <Quote className="h-4 w-4 text-cyan-500" />,
       color: "text-black-500",
       bgColor: "bg-cyan-50",
-      label: "Quotation" 
-    }
+      label: "Quotation",
+    },
   };
+
+  useEffect(() => {
+    // Set overflow hidden on html element
+    const htmlElement = document.documentElement;
+    htmlElement.style.overflow = "hidden";
+
+    // Cleanup function to restore overflow when component unmounts
+    return () => {
+      htmlElement.style.overflow = "";
+    };
+  }, []);
 
   // Set the appropriate number prefix based on type
   useEffect(() => {
-    const prefix = 
-      purchaseType === "invoice" ? "INV-" :
-      purchaseType === "shipment" ? "SH-" :
-      purchaseType === "order" ? "ORD-" :
-      purchaseType === "offer" ? "OFR-" :
-      purchaseType === "quotation" ? "QUO-" : "REQ-";
-    setNumber(`${prefix}${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`);
+    const prefix =
+      purchaseType === "invoice"
+        ? "INV-"
+        : purchaseType === "shipment"
+        ? "SH-"
+        : purchaseType === "order"
+        ? "ORD-"
+        : purchaseType === "offer"
+        ? "OFR-"
+        : purchaseType === "quotation"
+        ? "QUO-"
+        : "REQ-";
+    setNumber(
+      `${prefix}`
+    );
   }, [purchaseType, setNumber]);
 
   return (
@@ -149,8 +174,9 @@ export function PurchaseInformationForm({
             onValueChange={(value: PurchaseType) => {
               setPurchaseType(value);
             }}
+            disabled={isReadOnlyTypeAndNumber}
           >
-            <SelectTrigger>
+            <SelectTrigger disabled={isReadOnlyTypeAndNumber}>
               <div className="flex items-center gap-2">
                 {typeConfig[purchaseType].icon}
                 <span className={typeConfig[purchaseType].color}>
@@ -191,35 +217,38 @@ export function PurchaseInformationForm({
         </div>
 
         {/* Type-specific fields */}
-        {purchaseType === "shipment" && setTrackingNumber && setCarrier && setShippingDate && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="trackingNumber">Tracking Number</Label>
-              <Input
-                id="trackingNumber"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="carrier">Carrier</Label>
-              <Input
-                id="carrier"
-                value={carrier}
-                onChange={(e) => setCarrier(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shippingDate">Shipping Date</Label>
-              <Input
-                id="shippingDate"
-                type="date"
-                value={shippingDate}
-                onChange={(e) => setShippingDate(e.target.value)}
-              />
-            </div>
-          </>
-        )}
+        {purchaseType === "shipment" &&
+          setTrackingNumber &&
+          setCarrier &&
+          setShippingDate && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="trackingNumber">Tracking Number</Label>
+                <Input
+                  id="trackingNumber"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="carrier">Carrier</Label>
+                <Input
+                  id="carrier"
+                  value={carrier}
+                  onChange={(e) => setCarrier(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="shippingDate">Shipping Date</Label>
+                <Input
+                  id="shippingDate"
+                  type="date"
+                  value={shippingDate}
+                  onChange={(e) => setShippingDate(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
         {purchaseType === "order" && setOrderDate && (
           <div className="space-y-2">
@@ -272,7 +301,11 @@ export function PurchaseInformationForm({
                 onValueChange={(value) => {
                   if (setUrgency) {
                     // Fix the type mismatch by ensuring we pass a valid PurchasePriority value
-                    if (value === "High" || value === "Medium" || value === "Low") {
+                    if (
+                      value === "High" ||
+                      value === "Medium" ||
+                      value === "Low"
+                    ) {
                       setUrgency(value);
                     }
                   }
@@ -317,9 +350,7 @@ export function PurchaseInformationForm({
           <Label htmlFor="status">Status</Label>
           <Select
             value={status}
-            onValueChange={(value: PurchaseStatus) =>
-              setStatus(value)
-            }
+            onValueChange={(value: PurchaseStatus) => setStatus(value)}
           >
             <SelectTrigger>
               <SelectValue />

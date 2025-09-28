@@ -14,17 +14,19 @@ interface CreatePurchaseFormProps {
   setPurchaseType: (type: PurchaseType) => void;
   onSubmit?: (data: any) => void;
   isLoading?: boolean;
+  isReadOnlyTypeAndNumber?: boolean;
 }
 
 export function CreatePurchaseForm({ 
   purchaseType, 
   setPurchaseType, 
   onSubmit,
-  isLoading = false 
+  isLoading = false,
+  isReadOnlyTypeAndNumber = false,
 }: CreatePurchaseFormProps) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-  const [number, setNumber] = useState(`INV-${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`);
+  const [number, setNumber] = useState(`INV-`);
   const [approver, setApprover] = useState("");
   const [status, setStatus] = useState<"pending" | "completed" | "cancelled" | "Half-paid">("pending");
   const [tags, setTags] = useState("");
@@ -32,6 +34,7 @@ export function CreatePurchaseForm({
     id: Math.random().toString(36).substr(2, 9), 
     name: '', 
     quantity: 1, 
+    unit: "kg" as const,
     price: 0 
   }]);
 
@@ -50,6 +53,9 @@ export function CreatePurchaseForm({
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("");
   const [shippingDate, setShippingDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // File upload for invoice, shipment, order, offer, request
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +76,8 @@ export function CreatePurchaseForm({
       dpp: 0,
       ppn: 0,
       pph: 0,
-      grandTotal: items.reduce((total, item) => total + (item.quantity * item.price), 0)
+      grandTotal: items.reduce((total, item) => total + (item.quantity * item.price), 0),
+      attachmentFile: attachmentFile
     };
 
     // Add type-specific fields based on purchaseType
@@ -105,6 +112,7 @@ export function CreatePurchaseForm({
         setDate={setDate}
         number={number}
         setNumber={setNumber}
+        isReadOnlyTypeAndNumber={isReadOnlyTypeAndNumber}
         approver={approver}
         setApprover={setApprover}
         dueDate={dueDate}
@@ -233,6 +241,28 @@ export function CreatePurchaseForm({
         setItems={setItems}
         purchaseType={purchaseType}
       />
+
+      {/* File upload for invoice, shipment, order, offer, request */}
+      {(purchaseType === "invoice" || purchaseType === "shipment" || purchaseType === "order" || purchaseType === "offer" || purchaseType === "request") && (
+        <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+          <h3 className="font-medium text-gray-900">Attachment</h3>
+          <div className="space-y-2">
+            <Label htmlFor="attachment" className="text-sm font-medium text-gray-700">Upload File (Optional)</Label>
+            <Input
+              id="attachment"
+              type="file"
+              onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+              className="mt-1"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+            {attachmentFile && (
+              <p className="text-sm text-gray-600 mt-1">
+                Selected: {attachmentFile.name}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end gap-4 pt-6 border-t">
         <Button type="button" variant="outline" disabled={isLoading}>

@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
-import { Circle, MoreVertical, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Loader2, AlertCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -13,8 +12,9 @@ import {
 } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ShipmentPurchase } from "@/types/purchase";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ShipmentPurchase } from "@/types/purchase";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,14 +25,64 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useShipmentsAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
+import { Pagination } from "@/components/Pagination";
+import { formatPriceWithSeparator } from "@/utils/salesUtils";
 
 interface ShipmentsTableProps {
-  shipments: ShipmentPurchase[];
-  onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
-export function ShipmentsTable({ shipments, onDelete, onEdit }: ShipmentsTableProps) {
+const getStatusBadgeProps = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "completed":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "pending":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    case "cancelled":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "in-transit":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+// Transform API data to table format
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): ShipmentPurchase[] => {
+  return apiData.map(item => ({
+    id: item.id,
+    date: new Date(item.date),
+    number: item.number,
+    shippingDate: item.shipping_date ? new Date(item.shipping_date) : new Date(item.date),
+    dueDate: item.due_date ? new Date(item.due_date) : undefined,
+    status: item.status as any,
+    amount: item.grand_total || item.amount,
+    type: "shipment" as const,
+    items: item.items || [],
+    trackingNumber: (item as any).tracking_number || item.number,
+    carrier: (item as any).carrier || ''
+  }));
+};
+
+export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
+  const {
+    data: apiData,
+    isLoading,
+    error,
+    page,
+    limit,
+    totalPages,
+    total,
+    handlePageChange,
+    handleLimitChange,
+    refresh
+  } = useShipmentsAPI();
+
+  // Transform API data to table format
+  const shipments = transformAPIDataToTable(apiData);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shipmentToDelete, setShipmentToDelete] = useState<string | null>(null);
 
@@ -43,7 +93,7 @@ export function ShipmentsTable({ shipments, onDelete, onEdit }: ShipmentsTablePr
 
   const confirmDelete = () => {
     if (shipmentToDelete) {
-      onDelete(shipmentToDelete);
+      onDelete?.(shipmentToDelete);
     }
     setDeleteDialogOpen(false);
   };
@@ -67,12 +117,13 @@ export function ShipmentsTable({ shipments, onDelete, onEdit }: ShipmentsTablePr
       return "Invalid date";
     }
     
-    return format(dateObj, "dd/MM/yyyy");
+    return dateObj.toLocaleDateString('en-GB');
   };
 
-  return (
-    <>
-      <div className="border rounded-lg">
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -81,71 +132,162 @@ export function ShipmentsTable({ shipments, onDelete, onEdit }: ShipmentsTablePr
               <TableHead>Carrier</TableHead>
               <TableHead>Shipping Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {shipments.map((shipment) => (
-              <TableRow key={shipment.id}>
-                <TableCell>{formatDate(shipment.date)}</TableCell>
-                <TableCell>
-                  <Link 
-                    to={`/shipment/${shipment.id}`}
-                    className="text-indigo-600 hover:underline"
-                  >
-                    {shipment.trackingNumber}
-                  </Link>
-                </TableCell>
-                <TableCell>{shipment.carrier}</TableCell>
-                <TableCell>{formatDate(shipment.shippingDate)}</TableCell>
-                <TableCell>
-                  <span className={cn(
-                    "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium",
-                    {
-                      "bg-yellow-100 text-yellow-800": shipment.status === "pending",
-                      "bg-green-100 text-green-800": shipment.status === "completed",
-                      "bg-red-100 text-red-800": shipment.status === "cancelled",
-                    }
-                  )}>
-                    <Circle className={cn(
-                      "h-2 w-2",
-                      {
-                        "fill-yellow-500 text-yellow-500": shipment.status === "pending",
-                        "fill-green-500 text-green-500": shipment.status === "completed",
-                        "fill-red-500 text-red-500": shipment.status === "cancelled",
-                      }
-                    )} />
-                    {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => onEdit(shipment.id)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteClick(shipment.id)}
-                        className="text-red-600"
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-12">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                  <span className="text-sm text-gray-500">Loading shipments...</span>
+                </div>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </div>
+    );
+  }
 
+  // Error state
+  if (error) {
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Tracking #</TableHead>
+              <TableHead>Carrier</TableHead>
+              <TableHead>Shipping Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-12">
+                <div className="flex flex-col items-center gap-2">
+                  <AlertCircle className="h-6 w-6 text-red-500" />
+                  <span className="text-sm text-red-600">{error}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={refresh}
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Tracking #</TableHead>
+              <TableHead>Carrier</TableHead>
+              <TableHead>Shipping Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shipments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                  No shipments found
+                </TableCell>
+              </TableRow>
+            ) : (
+              shipments.map((shipment) => (
+                <TableRow key={shipment.id}>
+                  <TableCell className="font-medium">
+                    {formatDate(shipment.date)}
+                  </TableCell>
+                  <TableCell>
+                    <button 
+                      onClick={() => window.location.href = `/shipment/${shipment.id}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    >
+                      {shipment.trackingNumber}
+                    </button>
+                  </TableCell>
+                  <TableCell>{shipment.carrier}</TableCell>
+                  <TableCell>{formatDate(shipment.shippingDate)}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusBadgeProps(shipment.status)}>
+                      {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    Rp {formatPriceWithSeparator(shipment.amount)}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-white">
+                        <DropdownMenuItem onClick={() => window.location.href = `/shipment/${shipment.id}`}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
+                        </DropdownMenuItem>
+                        {onEdit && (
+                          <DropdownMenuItem onClick={() => onEdit(shipment.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                        )}
+                        {onDelete && (
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(shipment.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {/* Pagination */}
+      {shipments.length > 0 && (
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={apiData.length * totalPages}
+          itemsPerPage={limit}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleLimitChange}
+          itemsPerPageOptions={[5, 10, 20, 50]}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -165,6 +307,6 @@ export function ShipmentsTable({ shipments, onDelete, onEdit }: ShipmentsTablePr
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }

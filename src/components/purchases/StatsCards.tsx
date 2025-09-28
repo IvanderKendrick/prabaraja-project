@@ -25,7 +25,8 @@ export function StatsCards({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="text-2xl font-medium text-orange-600">{formatCurrency(unpaidAmount)}</div>
+            {/* <div className="text-2xl font-medium text-orange-600">{formatCurrency(unpaidAmount)}</div> */}
+            <div className="text-2xl font-medium text-orange-600">{formatCurrency(0)}</div>
             <p className="text-xs text-muted-foreground">
               Pending & Half-Paid invoices
             </p>

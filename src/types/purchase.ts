@@ -4,6 +4,7 @@ export interface PurchaseItem {
   id: string;
   name: string;
   quantity: number;
+  unit: "kg" | "buah";
   price: number;
 }
 

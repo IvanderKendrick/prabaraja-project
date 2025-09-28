@@ -599,9 +599,36 @@ export const usePurchaseById = (id: string, type: string) => {
   return useQuery({
     queryKey: ['purchase', type, id],
     queryFn: async () => {
+      // Normalize incoming type casing / aliases
+      const normalizedType = (() => {
+        const t = String(type || '').toLowerCase();
+        if (t === 'purchase_order') return 'order';
+        if (t === 'invoices') return 'invoice';
+        if (t === 'offers') return 'offer';
+        if (t === 'orders') return 'order';
+        if (t === 'requests') return 'request';
+        if (t === 'shipments') return 'shipment';
+        return t;
+      })();
+
+      // Support quotations via localStorage storage used by usePurchaseQuotations
+      if (normalizedType === 'quotation') {
+        try {
+          const stored = localStorage.getItem('purchase-quotations');
+          const list = stored ? JSON.parse(stored) : [];
+          const found = Array.isArray(list) ? list.find((q: any) => q.id === id) : null;
+          if (!found) {
+            throw new Error('Quotation not found');
+          }
+          return found;
+        } catch (e) {
+          console.error('Error fetching quotation by id from localStorage:', e);
+          throw e;
+        }
+      }
+
       let tableName: 'invoices' | 'offers' | 'orders' | 'requests' | 'shipments';
-      
-      switch (type) {
+      switch (normalizedType) {
         case 'invoice':
           tableName = 'invoices';
           break;
@@ -628,7 +655,7 @@ export const usePurchaseById = (id: string, type: string) => {
         .single();
 
       if (error) {
-        console.error(`Error fetching ${type}:`, error);
+        console.error(`Error fetching ${normalizedType}:`, error);
         throw error;
       }
 
