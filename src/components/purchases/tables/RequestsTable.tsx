@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Edit, Trash2, AlertTriangle, Check, X, Loader2, AlertCircle, Eye } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  Check,
+  X,
+  Loader2,
+  AlertCircle,
+  Eye,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -10,7 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -34,6 +49,7 @@ interface RequestsTableProps {
   onEdit?: (id: string) => void;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
+  onView?: (id: string) => void;
 }
 
 const getStatusBadgeProps = (status: string) => {
@@ -65,8 +81,10 @@ const getUrgencyBadgeProps = (urgency: string) => {
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): RequestPurchase[] => {
-  return apiData.map(item => ({
+const transformAPIDataToTable = (
+  apiData: PurchaseAPIResponse[]
+): RequestPurchase[] => {
+  return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
     number: item.number,
@@ -75,16 +93,20 @@ const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): RequestPurchas
     amount: item.grand_total || item.amount,
     type: "request" as const,
     items: item.items || [],
-    requestedBy: (item as any).requested_by || '',
-    urgency: (item as any).urgency || 'Medium'
+    requestedBy: (item as any).requested_by || "",
+    urgency: (item as any).urgency || "Medium",
+    approver: (item as any).approver || "",
+    tags: (item as any).tags || [],
+    itemCount: Array.isArray(item.items) ? item.items.length : 0,
   }));
 };
 
-export function RequestsTable({ 
-  onDelete, 
+export function RequestsTable({
+  onDelete,
   onEdit,
+  onView,
   onApprove,
-  onReject
+  onReject,
 }: RequestsTableProps) {
   const {
     data: apiData,
@@ -96,7 +118,7 @@ export function RequestsTable({
     total,
     handlePageChange,
     handleLimitChange,
-    refresh
+    refresh,
   } = useRequestsAPI();
 
   // Transform API data to table format
@@ -129,8 +151,8 @@ export function RequestsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Requested</TableHead>
-              <TableHead>Request #</TableHead>
+              <TableHead>Request Date</TableHead>
+              <TableHead>Request Number</TableHead>
               <TableHead>Requested By</TableHead>
               <TableHead>Urgency</TableHead>
               <TableHead>Due Date</TableHead>
@@ -144,7 +166,9 @@ export function RequestsTable({
               <TableCell colSpan={8} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">Loading requests...</span>
+                  <span className="text-sm text-gray-500">
+                    Loading requests...
+                  </span>
                 </div>
               </TableCell>
             </TableRow>
@@ -161,8 +185,8 @@ export function RequestsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Requested</TableHead>
-              <TableHead>Request #</TableHead>
+              <TableHead>Request Date</TableHead>
+              <TableHead>Request Number</TableHead>
               <TableHead>Requested By</TableHead>
               <TableHead>Urgency</TableHead>
               <TableHead>Due Date</TableHead>
@@ -177,9 +201,9 @@ export function RequestsTable({
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={refresh}
                     className="mt-2"
                   >
@@ -200,8 +224,8 @@ export function RequestsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Requested</TableHead>
-              <TableHead>Request #</TableHead>
+              <TableHead>Request Date</TableHead>
+              <TableHead>Request Number</TableHead>
               <TableHead>Requested By</TableHead>
               <TableHead>Urgency</TableHead>
               <TableHead>Due Date</TableHead>
@@ -213,7 +237,10 @@ export function RequestsTable({
           <TableBody>
             {requests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   No requests found
                 </TableCell>
               </TableRow>
@@ -221,11 +248,13 @@ export function RequestsTable({
               requests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">
-                    {request.date.toLocaleDateString('en-GB')}
+                    {request.date.toLocaleDateString("en-GB")}
                   </TableCell>
                   <TableCell>
-                    <button 
-                      onClick={() => window.location.href = `/request/${request.id}`}
+                    <button
+                      onClick={() =>
+                        (window.location.href = `/request/${request.id}`)
+                      }
                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                     >
                       {request.number}
@@ -234,16 +263,21 @@ export function RequestsTable({
                   <TableCell>{request.requestedBy}</TableCell>
                   <TableCell>
                     <Badge className={getUrgencyBadgeProps(request.urgency)}>
-                      {request.urgency === "High" && <AlertTriangle className="h-3 w-3 mr-1" />}
+                      {request.urgency === "High" && (
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                      )}
                       {request.urgency}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {request.dueDate ? request.dueDate.toLocaleDateString('en-GB') : "-"}
+                  <TableCell className={cn("text-red-500 font-medium")}>
+                    {request.dueDate
+                      ? request.dueDate.toLocaleDateString("en-GB")
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusBadgeProps(request.status)}>
-                      {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      {request.status.charAt(0).toUpperCase() +
+                        request.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
@@ -258,28 +292,32 @@ export function RequestsTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white">
-                        <DropdownMenuItem onClick={() => window.location.href = `/request/${request.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        {request.status === "pending" && onApprove && onReject && (
-                          <>
-                            <DropdownMenuItem 
-                              onClick={() => onApprove(request.id)}
-                              className="text-green-600"
-                            >
-                              <Check className="mr-2 h-4 w-4" />
-                              Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => onReject(request.id)}
-                              className="text-red-600"
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              Reject
-                            </DropdownMenuItem>
-                          </>
+                        {onView && (
+                          <DropdownMenuItem onClick={() => onView(request.id)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
                         )}
+                        {request.status === "pending" &&
+                          onApprove &&
+                          onReject && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => onApprove(request.id)}
+                                className="text-green-600"
+                              >
+                                <Check className="mr-2 h-4 w-4" />
+                                Approve
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => onReject(request.id)}
+                                className="text-red-600"
+                              >
+                                <X className="mr-2 h-4 w-4" />
+                                Reject
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         {onEdit && (
                           <DropdownMenuItem onClick={() => onEdit(request.id)}>
                             <Edit className="mr-2 h-4 w-4" />
@@ -287,7 +325,7 @@ export function RequestsTable({
                           </DropdownMenuItem>
                         )}
                         {onDelete && (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDeleteClick(request.id)}
                             className="text-red-600"
                           >
@@ -304,7 +342,7 @@ export function RequestsTable({
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination */}
       {requests.length > 0 && (
         <Pagination
@@ -322,14 +360,17 @@ export function RequestsTable({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this request?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to delete this request?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the request.
+              This action cannot be undone. This will permanently delete the
+              request.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDelete}>No</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
             >

@@ -4,12 +4,23 @@ export interface PurchaseItem {
   id: string;
   name: string;
   quantity: number;
-  unit: "kg" | "buah";
+  unit: string;
   price: number;
+  // New discount fields per item
+  discountPercent?: number; // 0-100
+  discountPrice?: number; // absolute nominal discount
+  // New checkbox fields
+  stock?: boolean; // Stock checkbox
+  return?: number; // Return checkbox
+  // Additional fields
+  sku?: string;
+  memo?: string;
+  coaAccountId?: string; // Selected COA account ID/code
+  coaLabel?: string; // Human-readable label for display
 }
 
 export type PurchaseType = "invoice" | "shipment" | "order" | "offer" | "request" | "quotation";
-export type PurchaseStatus = "pending" | "completed" | "cancelled" | "Half-paid";
+export type PurchaseStatus = "pending" | "completed" | "cancelled"  | "Half-paid";
 export type PurchasePriority = "High" | "Medium" | "Low";
 
 // Base interface with COMMON fields
@@ -18,7 +29,6 @@ interface BasePurchase {
   date: Date;
   number: string;
   approver: string;
-  status: PurchaseStatus;
   tags: string[];
   type: PurchaseType;
   items: PurchaseItem[];
@@ -34,6 +44,7 @@ export interface InvoicePurchase extends BasePurchase {
   type: "invoice";
   dueDate: Date; // Required for invoice type
   paidAmount?: number;
+  status: PurchaseStatus;
 }
 
 export interface ShipmentPurchase extends BasePurchase {
@@ -41,16 +52,22 @@ export interface ShipmentPurchase extends BasePurchase {
   trackingNumber: string;
   carrier: string;
   shippingDate: Date;
+  status: PurchaseStatus;
 }
 
 export interface OrderPurchase extends BasePurchase {
   type: "order";
   orderDate: Date;
+  orderedBy: string;
+  urgency: PurchasePriority;
   discountTerms?: string;
+  installmentAmount: number;
 }
 
 export interface OfferPurchase extends BasePurchase {
   type: "offer";
+  vendorName: string;
+  startDate: Date;
   expiryDate: Date;
   discountTerms: string;
 }
@@ -59,14 +76,17 @@ export interface RequestPurchase extends BasePurchase {
   type: "request";
   requestedBy: string;
   urgency: PurchasePriority;
+  status: PurchaseStatus;
 }
 
 export interface QuotationPurchase extends BasePurchase {
   type: "quotation";
   vendorName: string;
   quotationDate: Date;
+  startDate: Date;
   validUntil: Date;
   terms?: string;
+  status: PurchaseStatus;
 }
 
 // Union type for all purchases

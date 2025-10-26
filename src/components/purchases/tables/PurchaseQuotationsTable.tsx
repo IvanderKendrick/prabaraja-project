@@ -1,7 +1,21 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Eye, Edit, Trash2, Loader2, AlertCircle } from "lucide-react";
+import {
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Trash2,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +24,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
 import { QuotationPurchase } from "@/types/purchase";
-import { usePurchaseQuotationsAPI, QuotationAPIResponse } from "@/hooks/usePurchaseQuotationsAPI";
+import {
+  usePurchaseQuotationsAPI,
+  QuotationAPIResponse,
+} from "@/hooks/usePurchaseQuotationsAPI";
 import { Pagination } from "@/components/Pagination";
 import { useNavigate } from "react-router-dom";
 
@@ -41,14 +58,18 @@ const isExpired = (validUntil: string | Date) => {
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (apiData: QuotationAPIResponse[]): QuotationPurchase[] => {
-  return apiData.map(item => ({
+const transformAPIDataToTable = (
+  apiData: QuotationAPIResponse[]
+): QuotationPurchase[] => {
+  return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.quotation_date),
     number: item.number,
-    approver: item.request_by || '',
+    approver: item.request_by || "",
     status: item.status as any,
-    tags: Array.isArray(item.tags) ? item.tags.map(tag => tag.trim()).filter(tag => tag) : [],
+    tags: Array.isArray(item.tags)
+      ? item.tags.map((tag) => tag.trim()).filter((tag) => tag)
+      : [],
     type: "quotation" as const,
     items: item.items || [],
     amount: item.grand_total || item.total,
@@ -56,14 +77,15 @@ const transformAPIDataToTable = (apiData: QuotationAPIResponse[]): QuotationPurc
     vendorName: item.vendor_name,
     quotationDate: new Date(item.quotation_date),
     validUntil: new Date(item.valid_until),
-    terms: item.terms
+    startDate: new Date(item.start_date),
+    terms: item.terms,
   }));
 };
 
-export function PurchaseQuotationsTable({ 
-  onEdit, 
-  onDelete, 
-  onView 
+export function PurchaseQuotationsTable({
+  onEdit,
+  onDelete,
+  onView,
 }: PurchaseQuotationsTableProps) {
   const navigate = useNavigate();
   const {
@@ -75,7 +97,7 @@ export function PurchaseQuotationsTable({
     totalPages,
     handlePageChange,
     handleLimitChange,
-    refresh
+    refresh,
   } = usePurchaseQuotationsAPI();
 
   // Transform API data to table format
@@ -88,9 +110,10 @@ export function PurchaseQuotationsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Number</TableHead>
+              <TableHead>Quotation Date</TableHead>
+              <TableHead>Quotation Number</TableHead>
               <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
               <TableHead>Valid Until</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
@@ -102,7 +125,9 @@ export function PurchaseQuotationsTable({
               <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">Loading quotations...</span>
+                  <span className="text-sm text-gray-500">
+                    Loading quotations...
+                  </span>
                 </div>
               </TableCell>
             </TableRow>
@@ -119,9 +144,10 @@ export function PurchaseQuotationsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Number</TableHead>
+              <TableHead>Quotation Date</TableHead>
+              <TableHead>Quotation Number</TableHead>
               <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
               <TableHead>Valid Until</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
@@ -134,9 +160,9 @@ export function PurchaseQuotationsTable({
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={refresh}
                     className="mt-2"
                   >
@@ -158,9 +184,10 @@ export function PurchaseQuotationsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Number</TableHead>
+              <TableHead>Quotation Date</TableHead>
+              <TableHead>Quotation Number</TableHead>
               <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
               <TableHead>Valid Until</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
@@ -169,7 +196,10 @@ export function PurchaseQuotationsTable({
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+              <TableCell
+                colSpan={7}
+                className="text-center py-6 text-muted-foreground"
+              >
                 No purchase quotations found
               </TableCell>
             </TableRow>
@@ -185,9 +215,10 @@ export function PurchaseQuotationsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Number</TableHead>
+              <TableHead>Quotation Date</TableHead>
+              <TableHead>Quotation Number</TableHead>
               <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
               <TableHead>Valid Until</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Amount</TableHead>
@@ -197,17 +228,20 @@ export function PurchaseQuotationsTable({
           <TableBody>
             {quotations.map((quotation) => {
               const expired = isExpired(quotation.validUntil);
-              const displayStatus = expired && quotation.status !== "completed" && quotation.status !== "cancelled" 
-                ? "expired" 
-                : quotation.status;
+              const displayStatus =
+                expired &&
+                quotation.status !== "completed" &&
+                quotation.status !== "cancelled"
+                  ? "expired"
+                  : quotation.status;
 
               return (
                 <TableRow key={quotation.id}>
                   <TableCell className="font-medium">
-                    {quotation.quotationDate.toLocaleDateString('en-GB')}
+                    {quotation.quotationDate.toLocaleDateString("en-GB")}
                   </TableCell>
                   <TableCell>
-                    <button 
+                    <button
                       onClick={() => {
                         if (onView) {
                           onView(quotation.id);
@@ -222,13 +256,19 @@ export function PurchaseQuotationsTable({
                   </TableCell>
                   <TableCell>{quotation.vendorName}</TableCell>
                   <TableCell>
-                    <span className={expired ? "text-red-600 font-medium" : "text-gray-900"}>
-                      {quotation.validUntil.toLocaleDateString('en-GB')}
+                    <span className="text-gray-900">
+                      {quotation.startDate.toLocaleDateString("en-GB")}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={"text-red-500 font-medium"}>
+                      {quotation.validUntil.toLocaleDateString("en-GB")}
                     </span>
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusBadgeProps(displayStatus)}>
-                      {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+                      {displayStatus.charAt(0).toUpperCase() +
+                        displayStatus.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
@@ -244,19 +284,23 @@ export function PurchaseQuotationsTable({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white">
                         {onView && (
-                          <DropdownMenuItem onClick={() => onView(quotation.id)}>
+                          <DropdownMenuItem
+                            onClick={() => onView(quotation.id)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                           </DropdownMenuItem>
                         )}
                         {onEdit && (
-                          <DropdownMenuItem onClick={() => onEdit(quotation.id)}>
+                          <DropdownMenuItem
+                            onClick={() => onEdit(quotation.id)}
+                          >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                         )}
                         {onDelete && (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => onDelete(quotation.id)}
                             className="text-red-600"
                           >
@@ -273,7 +317,7 @@ export function PurchaseQuotationsTable({
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination */}
       {quotations.length > 0 && (
         <Pagination

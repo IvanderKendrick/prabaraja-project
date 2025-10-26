@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Edit, Trash2, Check, X, Loader2, AlertCircle, Eye } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Check,
+  X,
+  Loader2,
+  AlertCircle,
+  Eye,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -10,7 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -29,49 +43,64 @@ import { useOffersAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
 import { Pagination } from "@/components/Pagination";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
 
-interface OffersTableProps {
-  onDelete?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onApprove?: (id: string) => void;
-  onReject?: (id: string) => void;
-}
+// interface OffersTableProps {
+//   onDelete?: (id: string) => void;
+//   onEdit?: (id: string) => void;
+//   onApprove?: (id: string) => void;
+//   onReject?: (id: string) => void;
+// }
 
-const getStatusBadgeProps = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "completed":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "pending":
-      return "bg-amber-100 text-amber-800 border-amber-200";
-    case "cancelled":
-      return "bg-red-100 text-red-800 border-red-200";
-    case "accepted":
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
+// const getStatusBadgeProps = (status: string) => {
+//   switch (status.toLowerCase()) {
+//     case "completed":
+//       return "bg-green-100 text-green-800 border-green-200";
+//     case "pending":
+//       return "bg-amber-100 text-amber-800 border-amber-200";
+//     case "cancelled":
+//       return "bg-red-100 text-red-800 border-red-200";
+//     case "accepted":
+//       return "bg-blue-100 text-blue-800 border-blue-200";
+//     default:
+//       return "bg-gray-100 text-gray-800 border-gray-200";
+//   }
+// };
 
 // Transform API data to table format
-const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): OfferPurchase[] => {
-  return apiData.map(item => ({
+const transformAPIDataToTable = (
+  apiData: PurchaseAPIResponse[]
+): OfferPurchase[] => {
+  return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
     number: item.number,
+    startDate: item.start_date ? new Date(item.start_date) : undefined,
     expiryDate: item.expiry_date ? new Date(item.expiry_date) : undefined,
-    status: item.status as any,
+    // status: item.status as any,
     amount: item.grand_total || item.amount,
     type: "offer" as const,
     items: item.items || [],
-    discountTerms: (item as any).discount_terms || ''
+    vendorName: item.vendor_name,
+    discountTerms: (item as any).discount_terms || "",
+    approver: (item as any).approver || "",
+    tags: (item as any).tags || [],
+    itemCount: Array.isArray(item.items) ? item.items.length : 0,
   }));
 };
 
-export function OffersTable({ 
-  onDelete, 
-  onEdit,
-  onApprove,
-  onReject
-}: OffersTableProps) {
+// export function OffersTable({
+//   onDelete,
+//   onEdit,
+//   onApprove,
+//   onReject
+// }: OffersTableProps) {
+
+interface PurchaseOffersTableProps {
+  // onEdit?: (id: string) => void;
+  // onDelete?: (id: string) => void;
+  onView?: (id: string) => void;
+}
+
+export function OffersTable({ onView }: PurchaseOffersTableProps) {
   const {
     data: apiData,
     isLoading,
@@ -82,31 +111,31 @@ export function OffersTable({
     total,
     handlePageChange,
     handleLimitChange,
-    refresh
+    refresh,
   } = useOffersAPI();
 
   // Transform API data to table format
   const offers = transformAPIDataToTable(apiData);
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
+  // const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  // const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
 
-  const handleDeleteClick = (id: string) => {
-    setOfferToDelete(id);
-    setDeleteDialogOpen(true);
-  };
+  // const handleDeleteClick = (id: string) => {
+  //   setOfferToDelete(id);
+  //   setDeleteDialogOpen(true);
+  // };
 
-  const confirmDelete = () => {
-    if (offerToDelete) {
-      onDelete?.(offerToDelete);
-    }
-    setDeleteDialogOpen(false);
-  };
+  // const confirmDelete = () => {
+  //   if (offerToDelete) {
+  //     onDelete?.(offerToDelete);
+  //   }
+  //   setDeleteDialogOpen(false);
+  // };
 
-  const cancelDelete = () => {
-    setOfferToDelete(null);
-    setDeleteDialogOpen(false);
-  };
+  // const cancelDelete = () => {
+  //   setOfferToDelete(null);
+  //   setDeleteDialogOpen(false);
+  // };
 
   // Loading state
   if (isLoading) {
@@ -115,11 +144,13 @@ export function OffersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Offer #</TableHead>
-              <TableHead>Expiry</TableHead>
+              <TableHead>Offer Date</TableHead>
+              <TableHead>Offer Number</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>Expiry Date</TableHead>
               <TableHead>Discount Terms</TableHead>
-              <TableHead>Status</TableHead>
+              {/* <TableHead>Status</TableHead> */}
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -129,7 +160,9 @@ export function OffersTable({
               <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">Loading offers...</span>
+                  <span className="text-sm text-gray-500">
+                    Loading offers...
+                  </span>
                 </div>
               </TableCell>
             </TableRow>
@@ -146,11 +179,13 @@ export function OffersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Offer #</TableHead>
-              <TableHead>Expiry</TableHead>
+              <TableHead>Offer Date</TableHead>
+              <TableHead>Offer Number</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>Expiry Date</TableHead>
               <TableHead>Discount Terms</TableHead>
-              <TableHead>Status</TableHead>
+              {/* <TableHead>Status</TableHead> */}
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -161,9 +196,9 @@ export function OffersTable({
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={refresh}
                     className="mt-2"
                   >
@@ -184,11 +219,13 @@ export function OffersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Created</TableHead>
-              <TableHead>Offer #</TableHead>
-              <TableHead>Expiry</TableHead>
+              <TableHead>Offer Date</TableHead>
+              <TableHead>Offer Number</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>Expiry Date</TableHead>
               <TableHead>Discount Terms</TableHead>
-              <TableHead>Status</TableHead>
+              {/* <TableHead>Status</TableHead> */}
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -196,7 +233,10 @@ export function OffersTable({
           <TableBody>
             {offers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   No offers found
                 </TableCell>
               </TableRow>
@@ -204,27 +244,35 @@ export function OffersTable({
               offers.map((offer) => (
                 <TableRow key={offer.id}>
                   <TableCell className="font-medium">
-                    {offer.date.toLocaleDateString('en-GB')}
+                    {offer.date.toLocaleDateString("en-GB")}
                   </TableCell>
                   <TableCell>
-                    <button 
-                      onClick={() => window.location.href = `/offer/${offer.id}`}
+                    <button
+                      onClick={() =>
+                        (window.location.href = `/offer/${offer.id}`)
+                      }
                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                     >
                       {offer.number}
                     </button>
                   </TableCell>
-                  <TableCell className={cn({
-                    "text-red-600 font-medium": offer.expiryDate && new Date() > offer.expiryDate
-                  })}>
-                    {offer.expiryDate ? offer.expiryDate.toLocaleDateString('en-GB') : "-"}
+                  <TableCell>{offer.vendorName}</TableCell>
+                  <TableCell className={cn("text-gray-900")}>
+                    {offer.startDate
+                      ? new Date(offer.startDate).toLocaleDateString("en-GB")
+                      : "-"}
+                  </TableCell>
+                  <TableCell className={cn("text-red-500 font-medium")}>
+                    {offer.expiryDate
+                      ? new Date(offer.expiryDate).toLocaleDateString("en-GB")
+                      : "-"}
                   </TableCell>
                   <TableCell>{offer.discountTerms}</TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <Badge className={getStatusBadgeProps(offer.status)}>
                       {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
                     </Badge>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="font-medium">
                     Rp {formatPriceWithSeparator(offer.amount)}
                   </TableCell>
@@ -237,11 +285,13 @@ export function OffersTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white">
-                        <DropdownMenuItem onClick={() => window.location.href = `/offer/${offer.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        {offer.status === "pending" && onApprove && onReject && (
+                        {onView && (
+                          <DropdownMenuItem onClick={() => onView(offer.id)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
+                        )}
+                        {/* {offer.status === "pending" && onApprove && onReject && (
                           <>
                             <DropdownMenuItem 
                               onClick={() => onApprove(offer.id)}
@@ -258,8 +308,8 @@ export function OffersTable({
                               Reject
                             </DropdownMenuItem>
                           </>
-                        )}
-                        {onEdit && (
+                        )} */}
+                        {/* {onEdit && (
                           <DropdownMenuItem onClick={() => onEdit(offer.id)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
@@ -273,7 +323,7 @@ export function OffersTable({
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
-                        )}
+                        )} */}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -283,7 +333,7 @@ export function OffersTable({
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination */}
       {offers.length > 0 && (
         <Pagination
@@ -298,7 +348,7 @@ export function OffersTable({
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to delete this offer?</AlertDialogTitle>
@@ -316,7 +366,7 @@ export function OffersTable({
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </div>
   );
 }

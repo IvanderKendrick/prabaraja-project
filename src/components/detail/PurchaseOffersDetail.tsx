@@ -1,4 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
+
+// Tambahan
+import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
+
 import {
   ArrowLeft,
   Calendar,
@@ -7,6 +12,7 @@ import {
   Calculator,
   Package,
   Loader2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,23 +20,19 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/utils";
-import { usePurchaseQuotationDetail } from "@/hooks/usePurchaseQuotationDetail";
+import { usePurchaseOffersDetail } from "@/hooks/usePurchaseOffersDetail";
 
-// ✅ Tambahkan import untuk layout
-import { Sidebar } from "@/components/Sidebar";
-import { Header } from "@/components/Header";
-
-export function PurchaseQuotationDetail() {
+export function PurchaseOffersDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: quotation, isLoading, error } = usePurchaseQuotationDetail(id);
+  const { data: offer, isLoading, error } = usePurchaseOffersDetail(id);
 
   const handleGoBack = () => navigate(-1);
   const handleDownloadAttachment = () => {
-    if (quotation?.attachment_url) {
-      const url = Array.isArray(quotation.attachment_url)
-        ? quotation.attachment_url[0]
-        : quotation.attachment_url.replace(/[\[\]"]/g, "");
+    if (offer?.attachment_url) {
+      const url = Array.isArray(offer.attachment_url)
+        ? offer.attachment_url[0]
+        : offer.attachment_url.replace(/[\[\]"]/g, "");
       window.open(url, "_blank");
     }
   };
@@ -39,7 +41,7 @@ export function PurchaseQuotationDetail() {
     return (
       <div className="flex h-screen flex-col items-center justify-center text-gray-500">
         <Loader2 className="h-8 w-8 animate-spin mb-3" />
-        <span>Loading quotation details...</span>
+        <span>Loading offer details...</span>
       </div>
     );
 
@@ -47,7 +49,7 @@ export function PurchaseQuotationDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
         <h2 className="text-2xl font-semibold text-gray-800">
-          Failed to load quotation
+          Failed to load offer
         </h2>
         <p className="text-gray-500">{error.message}</p>
         <Button onClick={handleGoBack} variant="outline">
@@ -57,14 +59,14 @@ export function PurchaseQuotationDetail() {
       </div>
     );
 
-  if (!quotation)
+  if (!offer)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
         <h2 className="text-2xl font-semibold text-gray-800">
-          Quotation Not Found
+          Offer Not Found
         </h2>
         <p className="text-gray-500">
-          The quotation you are looking for doesn’t exist or was deleted.
+          The offer you are looking for doesn’t exist or was deleted.
         </p>
         <Button onClick={handleGoBack} variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -73,27 +75,22 @@ export function PurchaseQuotationDetail() {
       </div>
     );
 
-  const isExpired = new Date() > new Date(quotation.valid_until);
+  const isExpired = new Date() > new Date(offer.expiry_date);
   const daysUntilExpiry = Math.ceil(
-    (new Date(quotation.valid_until).getTime() - new Date().getTime()) /
+    (new Date(offer.expiry_date).getTime() - new Date().getTime()) /
       (1000 * 3600 * 24)
   );
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* ✅ Sidebar kiri */}
       <Sidebar />
-
       <div className="flex-1 overflow-auto">
-        {/* ✅ Header atas */}
         <Header
-          title={`Purchase Quotation ${quotation.number}`}
-          description="View and manage details of this purchase quotation"
+          title={`Purchase Offer ${offer.number}`}
+          description="View and manage details of this purchase offer"
         />
-
-        {/* ✅ Konten utama */}
         <div className="container mx-auto p-6 space-y-6">
-          {/* Header dalam konten */}
+          {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Button
               onClick={handleGoBack}
@@ -105,46 +102,44 @@ export function PurchaseQuotationDetail() {
             </Button>
             <Badge
               className={
-                quotation.status === "Approved"
+                offer.status === "Approved"
                   ? "bg-green-100 text-green-800"
-                  : quotation.status === "Rejected"
+                  : offer.status === "Rejected"
                   ? "bg-red-100 text-red-800"
                   : isExpired
                   ? "bg-gray-100 text-gray-800"
                   : "bg-yellow-100 text-yellow-800"
               }
             >
-              {isExpired && quotation.status === "Pending"
+              {isExpired && offer.status === "Pending"
                 ? "Expired"
-                : quotation.status}
+                : offer.status}
             </Badge>
           </div>
 
-          {/* Grid utama */}
+          {/* Main grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Kiri */}
+            {/* Left content */}
             <div className="space-y-6 lg:col-span-2">
-              {/* Quotation info */}
+              {/* Offer info */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" /> Quotation Information
+                    <FileText className="h-5 w-5" /> Offer Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <Label className="text-gray-600">Quotation Number</Label>
-                    <p className="font-medium">{quotation.number}</p>
+                    <Label className="text-gray-600">Offer Number</Label>
+                    <p className="font-medium">{offer.number}</p>
                   </div>
                   <div>
                     <Label className="text-gray-600">Status</Label>
-                    <p>{quotation.status}</p>
+                    <p>{offer.status}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-600">Quotation Date</Label>
-                    <p>
-                      {new Date(quotation.quotation_date).toLocaleDateString()}
-                    </p>
+                    <Label className="text-gray-600">Start Date</Label>
+                    <p>{new Date(offer.date).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <Label className="text-gray-600">Due Date</Label>
@@ -153,7 +148,7 @@ export function PurchaseQuotationDetail() {
                         isExpired ? "text-red-600 font-semibold" : ""
                       }`}
                     >
-                      {new Date(quotation.due_date).toLocaleDateString()}
+                      {new Date(offer.due_date).toLocaleDateString()}
                       {isExpired && " (Expired)"}
                     </p>
                   </div>
@@ -170,18 +165,18 @@ export function PurchaseQuotationDetail() {
                 <CardContent className="space-y-3 text-sm">
                   <div>
                     <Label className="text-gray-600">Name</Label>
-                    <p className="font-medium">{quotation.vendor_name}</p>
+                    <p className="font-medium">{offer.vendor_name}</p>
                   </div>
-                  {quotation.vendor_address && (
+                  {offer.vendor_address && (
                     <div>
                       <Label className="text-gray-600">Address</Label>
-                      <p>{quotation.vendor_address}</p>
+                      <p>{offer.vendor_address}</p>
                     </div>
                   )}
-                  {quotation.vendor_phone && (
+                  {offer.vendor_phone && (
                     <div>
                       <Label className="text-gray-600">Phone</Label>
-                      <p>{quotation.vendor_phone}</p>
+                      <p>{offer.vendor_phone}</p>
                     </div>
                   )}
                 </CardContent>
@@ -217,8 +212,8 @@ export function PurchaseQuotationDetail() {
                         </tr>
                       </thead>
                       <tbody>
-                        {quotation.items?.length ? (
-                          quotation.items.map((item, i) => {
+                        {offer.items?.length ? (
+                          offer.items.map((item, i) => {
                             const qty = item.qty || item.quantity || 0;
                             const price = item.price || 0;
                             const discount =
@@ -260,23 +255,23 @@ export function PurchaseQuotationDetail() {
                 </CardContent>
               </Card>
 
-              {/* Terms & Notes */}
-              {(quotation.terms || quotation.memo) && (
+              {/* Terms & Memo */}
+              {(offer.terms || offer.memo) && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Terms & Notes</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
-                    {quotation.terms && (
+                    {offer.terms && (
                       <div>
                         <Label className="text-gray-600">Terms</Label>
-                        <p>{quotation.terms}</p>
+                        <p>{offer.terms}</p>
                       </div>
                     )}
-                    {quotation.memo && (
+                    {offer.memo && (
                       <div>
                         <Label className="text-gray-600">Memo</Label>
-                        <p>{quotation.memo}</p>
+                        <p>{offer.memo}</p>
                       </div>
                     )}
                   </CardContent>
@@ -284,7 +279,7 @@ export function PurchaseQuotationDetail() {
               )}
             </div>
 
-            {/* Sidebar kanan */}
+            {/* Right sidebar */}
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -296,13 +291,41 @@ export function PurchaseQuotationDetail() {
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span className="font-medium">
-                      {formatCurrency(quotation.total)}
+                      {formatCurrency(offer.total)}
                     </span>
                   </div>
+                  {offer.tax_details && (
+                    <>
+                      {offer.tax_details.dpp && (
+                        <div className="flex justify-between">
+                          <span>DPP</span>
+                          <span>
+                            {formatCurrency(offer.tax_details.dpp || 0)}
+                          </span>
+                        </div>
+                      )}
+                      {offer.tax_details.ppn && (
+                        <div className="flex justify-between">
+                          <span>PPN</span>
+                          <span>
+                            {formatCurrency(offer.tax_details.ppn || 0)}
+                          </span>
+                        </div>
+                      )}
+                      {offer.tax_details.pph && (
+                        <div className="flex justify-between">
+                          <span>PPH</span>
+                          <span>
+                            {formatCurrency(offer.tax_details.pph || 0)}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
                   <Separator />
                   <div className="flex justify-between text-base font-semibold">
                     <span>Grand Total</span>
-                    <span>{formatCurrency(quotation.grand_total)}</span>
+                    <span>{formatCurrency(offer.grand_total)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -321,7 +344,7 @@ export function PurchaseQuotationDetail() {
                         isExpired ? "text-red-600 font-semibold" : ""
                       }`}
                     >
-                      {new Date(quotation.valid_until).toLocaleDateString()}
+                      {new Date(offer.expiry_date).toLocaleDateString()}
                     </span>
                   </div>
                   {!isExpired && (
@@ -340,7 +363,7 @@ export function PurchaseQuotationDetail() {
                   )}
                   {isExpired && (
                     <p className="text-red-700 bg-red-50 border border-red-200 rounded-md p-2">
-                      This quotation has expired.
+                      This offer has expired.
                     </p>
                   )}
                 </CardContent>

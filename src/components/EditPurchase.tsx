@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { CreatePurchaseForm } from "@/components/create/CreatePurchaseForm";
-import { CreatePurchaseQuotationForm } from "@/components/purchases/forms/CreatePurchaseQuotationForm";
 import { PurchaseType } from "@/types/purchase";
 import { usePurchaseById } from "@/hooks/usePurchases";
 
@@ -103,17 +102,13 @@ const EditPurchase = () => {
         />
 
         <div className="p-6">
-          {purchaseType === "quotation" ? (
-            <CreatePurchaseQuotationForm onSubmit={handleSubmit} isReadOnlyTypeAndNumber />
-          ) : (
-            <CreatePurchaseForm
-              purchaseType={purchaseType}
-              setPurchaseType={setPurchaseType}
-              onSubmit={handleSubmit}
-              isLoading={false}
-              isReadOnlyTypeAndNumber
-            />
-          )}
+          <CreatePurchaseForm
+            purchaseType={purchaseType}
+            setPurchaseType={setPurchaseType}
+            onSubmit={handleSubmit}
+            isLoading={false}
+            isReadOnlyTypeAndNumber
+          />
         </div>
       </div>
     </div>

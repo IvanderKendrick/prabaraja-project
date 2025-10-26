@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Edit, Trash2, Loader2, AlertCircle, Eye } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Eye,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -10,7 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -32,6 +44,7 @@ import { formatPriceWithSeparator } from "@/utils/salesUtils";
 interface ShipmentsTableProps {
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onView?: (id: string) => void;
 }
 
 const getStatusBadgeProps = (status: string) => {
@@ -50,23 +63,31 @@ const getStatusBadgeProps = (status: string) => {
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): ShipmentPurchase[] => {
-  return apiData.map(item => ({
+const transformAPIDataToTable = (
+  apiData: PurchaseAPIResponse[]
+): ShipmentPurchase[] => {
+  return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
     number: item.number,
-    shippingDate: item.shipping_date ? new Date(item.shipping_date) : new Date(item.date),
+    shippingDate: item.shipping_date
+      ? new Date(item.shipping_date)
+      : new Date(item.date),
     dueDate: item.due_date ? new Date(item.due_date) : undefined,
     status: item.status as any,
     amount: item.grand_total || item.amount,
     type: "shipment" as const,
     items: item.items || [],
     trackingNumber: (item as any).tracking_number || item.number,
-    carrier: (item as any).carrier || ''
+    carrier: (item as any).carrier || "",
   }));
 };
 
-export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
+export function ShipmentsTable({
+  onDelete,
+  onEdit,
+  onView,
+}: ShipmentsTableProps) {
   const {
     data: apiData,
     isLoading,
@@ -77,7 +98,7 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
     total,
     handlePageChange,
     handleLimitChange,
-    refresh
+    refresh,
   } = useShipmentsAPI();
 
   // Transform API data to table format
@@ -108,16 +129,16 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
     if (!date) {
       return "-";
     }
-    
+
     // Ensure we have a valid Date object
     const dateObj = date instanceof Date ? date : new Date(date);
-    
+
     // Check if date is valid before formatting
     if (isNaN(dateObj.getTime())) {
       return "Invalid date";
     }
-    
-    return dateObj.toLocaleDateString('en-GB');
+
+    return dateObj.toLocaleDateString("en-GB");
   };
 
   // Loading state
@@ -141,7 +162,9 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
               <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">Loading shipments...</span>
+                  <span className="text-sm text-gray-500">
+                    Loading shipments...
+                  </span>
                 </div>
               </TableCell>
             </TableRow>
@@ -173,9 +196,9 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={refresh}
                     className="mt-2"
                   >
@@ -208,7 +231,10 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
           <TableBody>
             {shipments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   No shipments found
                 </TableCell>
               </TableRow>
@@ -219,8 +245,10 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
                     {formatDate(shipment.date)}
                   </TableCell>
                   <TableCell>
-                    <button 
-                      onClick={() => window.location.href = `/shipment/${shipment.id}`}
+                    <button
+                      onClick={() =>
+                        (window.location.href = `/shipment/${shipment.id}`)
+                      }
                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
                     >
                       {shipment.trackingNumber}
@@ -230,7 +258,8 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
                   <TableCell>{formatDate(shipment.shippingDate)}</TableCell>
                   <TableCell>
                     <Badge className={getStatusBadgeProps(shipment.status)}>
-                      {shipment.status.charAt(0).toUpperCase() + shipment.status.slice(1)}
+                      {shipment.status.charAt(0).toUpperCase() +
+                        shipment.status.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
@@ -245,10 +274,12 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white">
-                        <DropdownMenuItem onClick={() => window.location.href = `/shipment/${shipment.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
+                        {onView && (
+                          <DropdownMenuItem onClick={() => onView(shipment.id)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
+                        )}
                         {onEdit && (
                           <DropdownMenuItem onClick={() => onEdit(shipment.id)}>
                             <Edit className="mr-2 h-4 w-4" />
@@ -256,7 +287,7 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
                           </DropdownMenuItem>
                         )}
                         {onDelete && (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDeleteClick(shipment.id)}
                             className="text-red-600"
                           >
@@ -273,7 +304,7 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination */}
       {shipments.length > 0 && (
         <Pagination
@@ -291,14 +322,17 @@ export function ShipmentsTable({ onDelete, onEdit }: ShipmentsTableProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this shipment?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to delete this shipment?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the shipment.
+              This action cannot be undone. This will permanently delete the
+              shipment.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDelete}>No</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
             >

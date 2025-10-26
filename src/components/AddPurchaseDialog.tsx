@@ -24,6 +24,7 @@ interface AddPurchaseDialogProps {
     priority: PurchasePriority;
     tags: string[];
     type: PurchaseType;
+    memo?: string;
     // Type-specific fields
     trackingNumber?: string;
     carrier?: string;

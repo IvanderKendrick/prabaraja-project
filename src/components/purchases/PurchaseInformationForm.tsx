@@ -107,18 +107,18 @@ export function PurchaseInformationForm({
       bgColor: "bg-orange-50",
       label: "Shipment",
     },
-    order: {
-      icon: <Package className="h-4 w-4 text-blue-500" />,
-      color: "text-black-500",
-      bgColor: "bg-blue-50",
-      label: "Order",
-    },
-    offer: {
-      icon: <Tag className="h-4 w-4 text-green-500" />,
-      color: "text-black-500",
-      bgColor: "bg-green-50",
-      label: "Offer",
-    },
+    // order: {
+    //   icon: <Package className="h-4 w-4 text-blue-500" />,
+    //   color: "text-black-500",
+    //   bgColor: "bg-blue-50",
+    //   label: "Order",
+    // },
+    // offer: {
+    //   icon: <Tag className="h-4 w-4 text-green-500" />,
+    //   color: "text-black-500",
+    //   bgColor: "bg-green-50",
+    //   label: "Offer",
+    // },
     request: {
       icon: <AlertCircle className="h-4 w-4 text-pink-500" />,
       color: "text-black-500",
@@ -151,16 +151,14 @@ export function PurchaseInformationForm({
         ? "INV-"
         : purchaseType === "shipment"
         ? "SH-"
-        : purchaseType === "order"
-        ? "ORD-"
-        : purchaseType === "offer"
-        ? "OFR-"
-        : purchaseType === "quotation"
+        : // : purchaseType === "order"
+        // ? "ORD-"
+        // : purchaseType === "offer"
+        // ? "OFR-"
+        purchaseType === "quotation"
         ? "QUO-"
         : "REQ-";
-    setNumber(
-      `${prefix}`
-    );
+    setNumber(`${prefix}`);
   }, [purchaseType, setNumber]);
 
   return (
@@ -197,15 +195,35 @@ export function PurchaseInformationForm({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+        {purchaseType === "quotation" && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="date">Quotation Date</Label>
+              <Input id="date" type="date" value={date} />
+            </div>
+          </>
+        )}
+
+        {purchaseType === "request" && (
+          <div className="space-y-2">
+            <Label htmlFor="date">Request Date</Label>
+            <Input id="date" type="date" value={date} />
+          </div>
+        )}
+
+        {purchaseType === "shipment" && (
+          <div className="space-y-2">
+            <Label htmlFor="date">Shipment Date</Label>
+            <Input id="date" type="date" value={date} />
+          </div>
+        )}
+
+        {purchaseType === "invoice" && (
+          <div className="space-y-2">
+            <Label htmlFor="date">Invoice Date</Label>
+            <Input id="date" type="date" value={date} />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="number">Number</Label>
@@ -250,7 +268,7 @@ export function PurchaseInformationForm({
             </>
           )}
 
-        {purchaseType === "order" && setOrderDate && (
+        {/* {purchaseType === "order" && setOrderDate && (
           <div className="space-y-2">
             <Label htmlFor="orderDate">Order Date</Label>
             <Input
@@ -260,9 +278,9 @@ export function PurchaseInformationForm({
               onChange={(e) => setOrderDate(e.target.value)}
             />
           </div>
-        )}
+        )} */}
 
-        {purchaseType === "offer" && setDiscountTerms && setExpiryDate && (
+        {/* {purchaseType === "offer" && setDiscountTerms && setExpiryDate && (
           <>
             <div className="space-y-2">
               <Label htmlFor="discountTerms">Discount Terms</Label>
@@ -282,7 +300,7 @@ export function PurchaseInformationForm({
               />
             </div>
           </>
-        )}
+        )} */}
 
         {purchaseType === "request" && setRequestedBy && setUrgency && (
           <>
@@ -346,7 +364,7 @@ export function PurchaseInformationForm({
           />
         </div>
 
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
           <Select
             value={status}
@@ -361,6 +379,17 @@ export function PurchaseInformationForm({
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+        </div> */}
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Input
+            id="status"
+            type="text"
+            value="Pending"
+            disabled
+            className="bg-gray-300 text-black cursor-not-allowed"
+          />
         </div>
 
         <div className="space-y-2">

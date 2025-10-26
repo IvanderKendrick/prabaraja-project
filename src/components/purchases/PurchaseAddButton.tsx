@@ -31,7 +31,7 @@ export function PurchaseAddButton({ onAddPurchase }: PurchaseAddButtonProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="whitespace-nowrap bg-sidebar-active">
+        <Button className="whitespace-nowrap bg-sidebar-active hover:bg-green-600">
           <Plus className="mr-1 h-4 w-4" /> Add New
         </Button>
       </DropdownMenuTrigger>
@@ -42,15 +42,15 @@ export function PurchaseAddButton({ onAddPurchase }: PurchaseAddButtonProps) {
         <DropdownMenuItem onClick={() => handleAddPurchase("shipment")}>
           <Package className="mr-2 h-4 w-4 text-orange-500" /> New Shipment
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleAddPurchase("order")}>
+        {/* <DropdownMenuItem onClick={() => handleAddPurchase("order")}>
           <ShoppingCart className="mr-2 h-4 w-4 text-blue-500" /> New Order
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem onClick={() => handleAddPurchase("request")}>
           <FileQuestion className="mr-2 h-4 w-4 text-pink-500" /> New Request
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleAddPurchase("offer")}>
+        {/* <DropdownMenuItem onClick={() => handleAddPurchase("offer")}>
           <Tag className="mr-2 h-4 w-4 text-green-500" /> New Offer
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem onClick={() => handleAddPurchase("quotation")}>
           <FileText className="mr-2 h-4 w-4 text-indigo-500" /> New Quotation
         </DropdownMenuItem>

@@ -42,6 +42,7 @@ export const getInitialFormData = (defaultType: PurchaseType) => {
     priority: "Medium" as PurchasePriority,
     tags: [""],
     type: defaultType,
+    memo: "",
   };
 
   // Type-specific fields

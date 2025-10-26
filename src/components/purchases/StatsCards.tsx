@@ -17,10 +17,10 @@ export function StatsCards({
 }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Unpaid Invoices Card */}
+      {/* Unpaid Billing Payment Card */}
       <Card className="backdrop-blur-sm bg-card text-card-foreground border border-border shadow-lg hover:shadow-xl transition-all duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xl font-medium">Unpaid Invoices</CardTitle>
+          <CardTitle className="text-xl font-medium">Unpaid Billing Payment</CardTitle>
           <AlertCircle className="h-4 w-4 text-orange-500" />
         </CardHeader>
         <CardContent>
@@ -28,7 +28,7 @@ export function StatsCards({
             {/* <div className="text-2xl font-medium text-orange-600">{formatCurrency(unpaidAmount)}</div> */}
             <div className="text-2xl font-medium text-orange-600">{formatCurrency(0)}</div>
             <p className="text-xs text-muted-foreground">
-              Pending & Half-Paid invoices
+              Pending & Half-Paid Billing Payment
             </p>
             <div className="pt-2">
               <div className="text-xs text-muted-foreground mb-1">Status breakdown:</div>
@@ -51,15 +51,15 @@ export function StatsCards({
         </CardContent>
       </Card>
 
-      {/* Overdue Invoices Card */}
+      {/* Overdue Billing Payment Card */}
       <Card className="backdrop-blur-sm bg-card text-card-foreground border border-border shadow-lg hover:shadow-xl transition-all duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xl font-medium">Overdue Invoices</CardTitle>
+          <CardTitle className="text-xl font-medium">Overdue Billing Payments</CardTitle>
           <Clock className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="text-2xl font-medium text-red-600">{overdueCount} {overdueCount === 1 ? 'invoice' : 'invoices'}</div>
+            <div className="text-2xl font-medium text-red-600">{overdueCount} {overdueCount === 1 ? 'Billing' : 'Billings'}</div>
             <p className="text-xs text-muted-foreground">
               Requires immediate action
             </p>
@@ -94,7 +94,7 @@ export function StatsCards({
           <div className="space-y-2">
             <div className="text-2xl font-medium text-green-600">{formatCurrency(last30DaysPayments)}</div>
             <p className="text-xs text-muted-foreground">
-              Total expenses processed
+              Total payments processed
             </p>
             <div className="pt-2">
               <div className="text-xs text-muted-foreground mb-1">Payment categories:</div>

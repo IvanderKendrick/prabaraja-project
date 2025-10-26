@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-interface QuotationDetailData {
+interface OfferDetailData {
   id: string;
   number: string;
   quotation_date: string;
@@ -37,8 +37,8 @@ interface QuotationDetailData {
   pph_type?: string;
 }
 
-interface QuotationDetailResponse {
-  data?: QuotationDetailData[]; // ✅ ubah jadi array
+interface OfferDetailResponse {
+  data?: OfferDetailData[];
   error?: boolean;
   message?: string;
 }
@@ -54,16 +54,16 @@ const getAuthToken = () => {
   return token;
 };
 
-export const usePurchaseQuotationDetail = (id: string | undefined) => {
+export const usePurchaseOffersDetail = (id: string | undefined) => {
   return useQuery({
-    queryKey: ["purchase-quotation-detail", id],
-    queryFn: async (): Promise<QuotationDetailData | null> => {
-      if (!id) throw new Error("Quotation ID is required");
+    queryKey: ["purchase-offer-detail", id],
+    queryFn: async (): Promise<OfferDetailData | null> => {
+      if (!id) throw new Error("Offer ID is required");
 
       try {
         const token = getAuthToken();
-        const response = await axios.get<QuotationDetailResponse>(
-          `https://pbw-backend-api.vercel.app/api/purchases?action=getQuotation&search=${id}`,
+        const response = await axios.get<OfferDetailResponse>(
+          `https://pbw-backend-api.vercel.app/api/purchases?action=getOffer&search=${id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -71,7 +71,7 @@ export const usePurchaseQuotationDetail = (id: string | undefined) => {
 
         if (response.data?.error) {
           throw new Error(
-            response.data.message || "Failed to fetch quotation detail"
+            response.data.message || "Failed to fetch offer detail"
           );
         }
 
@@ -79,24 +79,22 @@ export const usePurchaseQuotationDetail = (id: string | undefined) => {
           return null;
         }
 
-        // ✅ Ambil elemen pertama karena data adalah array
-        const quotationData = response.data.data[0];
+        const offerData = response.data.data[0];
 
-        // Parse tax_details jika berupa string
         if (
-          quotationData.tax_details &&
-          typeof quotationData.tax_details === "string"
+          offerData.tax_details &&
+          typeof offerData.tax_details === "string"
         ) {
           try {
-            quotationData.tax_details = JSON.parse(quotationData.tax_details);
+            offerData.tax_details = JSON.parse(offerData.tax_details);
           } catch (e) {
             console.warn("Failed to parse tax_details JSON:", e);
           }
         }
 
-        return quotationData;
+        return offerData;
       } catch (error) {
-        console.error("Error fetching quotation detail:", error);
+        console.error("Error fetching offer detail:", error);
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 404) {
             return null;
@@ -104,7 +102,7 @@ export const usePurchaseQuotationDetail = (id: string | undefined) => {
           throw new Error(
             error.response?.data?.message ||
               error.message ||
-              "Failed to fetch quotation detail"
+              "Failed to fetch offer detail"
           );
         }
         throw error;

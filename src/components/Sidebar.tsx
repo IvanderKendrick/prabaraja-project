@@ -65,7 +65,9 @@ export const Sidebar = () => {
            path.startsWith("/approval-request") ||
            path.startsWith("/approval-shipment") ||
            path.startsWith("/approval-invoice") ||
-           path.startsWith("/approval-billing-invoice");
+           path.startsWith("/approval") ||
+           path.startsWith("/create-purchase") ||
+           path.startsWith("/billing-summary");
   };
   
   const [isSalesOpen, setIsSalesOpen] = useState(currentPath.startsWith("/sales"));
@@ -198,7 +200,7 @@ export const Sidebar = () => {
           type="button"
           onClick={() => setIsPurchasesOpen((v) => !v)}
           className={`w-[calc(100%-1rem)] mx-2 flex items-center justify-between gap-3 px-4 py-1.5 rounded-[20px] transition-colors duration-200 ${
-            currentPath.startsWith("/purchases") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            isPurchasesRelated(currentPath) ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
           }`}
         >
           <span className="flex items-center gap-3">
@@ -257,44 +259,20 @@ export const Sidebar = () => {
             Invoices
           </Link>
           <Link
-            to="/approval-quotation"
+            to="/billing-summary"
             className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/approval-quotation") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+              currentPath.startsWith("/billing-summary") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
             }`}
           >
-            Approval Quotation
+            Billing Summary
           </Link>
           <Link
-            to="/approval-request"
+            to="/approval"
             className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/approval-request") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+              currentPath.startsWith("/approval") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
             }`}
           >
-            Approval Request
-          </Link>
-          <Link
-            to="/approval-shipment"
-            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/approval-shipment") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
-            }`}
-          >
-            Approval Shipment
-          </Link>
-          <Link
-            to="/approval-invoice"
-            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/approval-invoice") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
-            }`}
-          >
-            Approval Invoice
-          </Link>
-          <Link
-            to="/approval-billing-invoice"
-            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/approval-billing-invoice") ? "bg-sidebar-active/20 text-sidebar-active" : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
-            }`}
-          >
-            Approval Billing Invoice
+            Approval
           </Link>
         </SubMenu>
 

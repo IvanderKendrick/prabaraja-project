@@ -22,6 +22,7 @@ interface PurchaseFormFieldsProps {
     priority: PurchasePriority;
     tags: string[];
     type: PurchaseType;
+    memo?: string;
     // Type-specific fields
     trackingNumber?: string;
     carrier?: string;
@@ -298,6 +299,18 @@ export function PurchaseFormFields({
             <SelectItem value="Low">Low</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="memo" className="text-right">
+          Memo
+        </Label>
+        <Input
+          id="memo"
+          value={formData.memo || ""}
+          onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+          className="col-span-3"
+          placeholder="Enter memo or notes"
+        />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="tags" className="text-right">
