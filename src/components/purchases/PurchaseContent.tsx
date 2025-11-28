@@ -329,7 +329,7 @@ export function PurchaseContent() {
       break;
 
     default:
-      content = <p>No tab selected</p>;
+    // content = <p>No tab selected</p>;
   }
 
   return (

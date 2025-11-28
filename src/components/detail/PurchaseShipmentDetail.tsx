@@ -156,7 +156,7 @@ export function PurchaseShipmentDetail() {
                     <Building2 className="h-5 w-5" /> Vendor Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="flex items-start justify-between gap-6 text-sm">
                   <div>
                     <Label className="text-gray-600">Vendor Name</Label>
                     <p className="font-medium">{shipment.vendor_name}</p>
@@ -201,6 +201,9 @@ export function PurchaseShipmentDetail() {
                             Discount
                           </th>
                           <th className="text-right py-2 px-3 font-medium text-gray-600">
+                            Return
+                          </th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600">
                             Total
                           </th>
                         </tr>
@@ -216,7 +219,19 @@ export function PurchaseShipmentDetail() {
                                 : item.disc_item
                                 ? formatCurrency(item.disc_item)
                                 : "-";
-                            const total = qty * price;
+                            const total =
+                              // qty * price - item.return_unit * price;
+                              item.disc_item_type === "percentage"
+                                ? Math.round(
+                                    qty *
+                                      price *
+                                      (1 - (item.disc_item || 0) / 100)
+                                  ) -
+                                  (item.return_unit || 0) * price
+                                : Math.round(
+                                    qty * price - (item.disc_item || 0)
+                                  ) -
+                                  (item.return_unit || 0) * price;
                             return (
                               <tr key={i} className="border-b">
                                 <td className="py-3 px-3">{item.item_name}</td>
@@ -226,6 +241,9 @@ export function PurchaseShipmentDetail() {
                                 </td>
                                 <td className="py-3 px-3 text-right">
                                   {discount}
+                                </td>
+                                <td className="py-3 px-3 text-right">
+                                  {item.return_unit}
                                 </td>
                                 <td className="py-3 px-3 text-right font-medium">
                                   {formatCurrency(total)}
@@ -288,30 +306,24 @@ export function PurchaseShipmentDetail() {
                       {formatCurrency(shipment.total)}
                     </span>
                   </div>
-                  {shipment.tax_details && (
+                  {shipment && (
                     <>
-                      {shipment.tax_details.dpp && (
+                      {shipment.dpp && (
                         <div className="flex justify-between">
                           <span>DPP</span>
-                          <span>
-                            {formatCurrency(shipment.tax_details.dpp || 0)}
-                          </span>
+                          <span>{formatCurrency(shipment.dpp || 0)}</span>
                         </div>
                       )}
-                      {shipment.tax_details.ppn && (
+                      {shipment.ppn && (
                         <div className="flex justify-between">
                           <span>PPN</span>
-                          <span>
-                            {formatCurrency(shipment.tax_details.ppn || 0)}
-                          </span>
+                          <span>{formatCurrency(shipment.ppn || 0)}</span>
                         </div>
                       )}
-                      {shipment.tax_details.pph && (
+                      {shipment && (
                         <div className="flex justify-between">
                           <span>PPH</span>
-                          <span>
-                            {formatCurrency(shipment.tax_details.pph || 0)}
-                          </span>
+                          <span>{formatCurrency(shipment.pph || 0)}</span>
                         </div>
                       )}
                     </>

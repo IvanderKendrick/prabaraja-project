@@ -1,14 +1,17 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    userData?: any
+  ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -19,31 +22,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        if (event === 'SIGNED_IN') {
-          toast.success('Successfully signed in!');
-        } else if (event === 'SIGNED_OUT') {
-          toast.success('Successfully signed out!');
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+
+      if (event === "SIGNED_IN") {
+        toast.success("Successfully signed in!");
+      } else if (event === "SIGNED_OUT") {
+        toast.success("Successfully signed out!");
       }
-    );
+    });
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -61,8 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          data: userData
-        }
+          data: userData,
+        },
       });
       return { error };
     } catch (error) {
@@ -74,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
       return { error };
     } catch (error) {
@@ -85,10 +90,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast.error('Error signing out');
-      console.error('Error signing out:', error);
+      toast.error("Error signing out");
+      console.error("Error signing out:", error);
     } else {
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
   };
 
@@ -108,12 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
-    resetPassword
+    resetPassword,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CreatePurchaseForm } from "../create/CreatePurchaseForm";
 import { PurchaseType } from "@/types/purchase";
+import axios from "axios";
+import { toast } from "sonner";
 
 export default function EditInvoicePage() {
   const { id } = useParams();
@@ -117,39 +119,68 @@ export default function EditInvoicePage() {
 
       apiFormData.append("date", formData.date || "");
       apiFormData.append("due_date", formData.dueDate || "");
-      apiFormData.append("status", formData.status || "");
+      apiFormData.append("status", "Pending");
       apiFormData.append("number", formData.number || "");
       apiFormData.append("approver", formData.approver || "");
       apiFormData.append(
         "tags",
-        Array.isArray(formData.tags)
-          ? formData.tags.join(",")
-          : formData.tags || ""
+        `{${
+          Array.isArray(formData.tags)
+            ? formData.tags.join(",")
+            : formData.tags || ""
+        }}`
       );
 
       // items mapping
-      const mappedItems = (formData.items || []).map((it: any) => {
-        const dType =
-          it.discountType ?? (it.discountPrice ? "rupiah" : "percentage");
+      // const mappedItems = (formData.items || []).map((it: any) => {
+      //   const dType =
+      //     it.discountType ?? (it.discountPrice ? "rupiah" : "percentage");
 
-        return {
-          coa: it.coa ?? "",
-          item_name: it.name ?? "",
-          sku: it.sku ?? "",
-          qty: it.quantity ?? 0,
-          unit: it.unit ?? "pcs",
-          price: it.price ?? 0,
-          memo: it.memo ?? "",
-          return_unit: it.return ?? 0,
-          addToStock: it.stock ?? false,
-          ...(dType === "percentage"
-            ? {
-                disc_item: it.discountPercent ?? 0,
-                disc_item_type: "percentage",
-              }
-            : { disc_item: it.discountPrice ?? 0, disc_item_type: "rupiah" }),
+      //   return {
+      //     coa: it.coa ?? "",
+      //     item_name: it.name ?? "",
+      //     sku: it.sku ?? "",
+      //     qty: it.quantity ?? 0,
+      //     unit: it.unit ?? "pcs",
+      //     price: it.price ?? 0,
+      //     memo: it.memo ?? "",
+      //     return_unit: it.return ?? 0,
+      //     addToStock: it.stock ?? false,
+      //     ...(dType === "percentage"
+      //       ? {
+      //           disc_item: it.discountPercent ?? 0,
+      //           disc_item_type: "percentage",
+      //         }
+      //       : { disc_item: it.discountPrice ?? 0, disc_item_type: "rupiah" }),
+      //   };
+      // });
+      // apiFormData.append("items", JSON.stringify(mappedItems));
+
+      const mappedItems = (formData.items || []).map((it: any) => {
+        const itemData: any = {
+          coa: it.coaLabel ? it.coaLabel.split(" - ")[0] : "",
+          item_name: it.name ?? it.item_name ?? "", // nama item
+          sku: it.sku ?? "", // kode SKU
+          qty: it.quantity ?? it.qty ?? 0, // jumlah
+          unit: it.unit ?? "pcs", // satuan
+          price: it.price ?? 0, // harga
+          return_unit: it.return ?? it.return_unit ?? 0, // jumlah retur (default 0)
+          memo: it.memo ?? "-", // catatan per item
+          addToStock: it.stock ?? it.addToStock ?? false, // status tambah ke stok
         };
+
+        // Handle discount (percentage or rupiah)
+        if (it.discountPercent && it.discountPercent > 0) {
+          itemData.disc_item = it.discountPercent;
+          itemData.disc_item_type = "percentage";
+        } else if (it.discountPrice && it.discountPrice > 0) {
+          itemData.disc_item = it.discountPrice;
+          itemData.disc_item_type = "rupiah";
+        }
+
+        return itemData;
       });
+
       apiFormData.append("items", JSON.stringify(mappedItems));
 
       // vendor info
@@ -197,20 +228,40 @@ export default function EditInvoicePage() {
         apiFormData.append("attachment_url", file)
       );
 
-      const res = await fetch(
+      // const res = await fetch(
+      //   "https://pbw-backend-api.vercel.app/api/purchases",
+      //   {
+      //     method: "PUT",
+      //     headers: { Authorization: `Bearer ${token}` },
+      //     body: apiFormData,
+      //   }
+      // );
+
+      //   const result = await res.json();
+      //   console.log("✅ Invoice Updated:", result);
+      //   navigate("/purchases/invoices");
+      // } catch (error) {
+      //   console.error("❌ Failed Update Invoice:", error);
+      // } finally {
+      //   setIsLoading(false);
+      // }
+
+      // 🚀 API call
+      const res = await axios.put(
         "https://pbw-backend-api.vercel.app/api/purchases",
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-          body: apiFormData,
-        }
+        apiFormData,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const result = await res.json();
-      console.log("✅ Invoice Updated:", result);
-      navigate("/purchases/invoices");
-    } catch (error) {
-      console.error("❌ Failed Update Invoice:", error);
+      if (res.data && !res.data.error) {
+        toast.success("Invoice updated successfully");
+        navigate("/purchases/invoices");
+      } else {
+        throw new Error(res.data?.message || "Failed to update invoice");
+      }
+    } catch (err: any) {
+      console.error("❌ Failed Update Invoice:", err);
+      toast.error(err.message || "Failed to update invoice");
     } finally {
       setIsLoading(false);
     }

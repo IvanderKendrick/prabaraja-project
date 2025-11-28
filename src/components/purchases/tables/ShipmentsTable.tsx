@@ -117,6 +117,10 @@ export function ShipmentsTable({
       onDelete?.(shipmentToDelete);
     }
     setDeleteDialogOpen(false);
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 5000);
   };
 
   const cancelDelete = () => {

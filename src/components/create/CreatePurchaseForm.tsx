@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { sub } from "date-fns";
+import { after } from "node:test";
 
 interface CreatePurchaseFormProps {
   purchaseType: PurchaseType;
@@ -61,6 +63,9 @@ export function CreatePurchaseForm({
     "pending" | "completed" | "cancelled" | "Half-paid"
   >("pending");
   const [tags, setTags] = useState("");
+  const [discountModeByItem, setDiscountModeByItem] = useState<
+    Record<string, "percent" | "nominal">
+  >({});
   const [items, setItems] = useState<PurchaseItem[]>([
     {
       id: Math.random().toString(36).substr(2, 9),
@@ -75,6 +80,78 @@ export function CreatePurchaseForm({
 
   const [vendorCoaAccountId, setVendorCoaAccountId] = useState<string>("");
   const [vendorCoaLabel, setVendorCoaLabel] = useState<string>("");
+
+  const [openVendorCoa, setOpenVendorCoa] = useState(false);
+  const [vendorCoaOptions, setVendorCoaOptions] = useState<any[]>([]);
+  const [isLoadingVendorCoa, setIsLoadingVendorCoa] = useState(false);
+
+  const [openCoaForItemId, setOpenCoaForItemId] = useState<string | null>(null);
+  const [coaSearch, setCoaSearch] = useState<string>("");
+  const [coaOptions, setCoaOptions] = useState<
+    Array<{ id: string; label: string }>
+  >([]);
+  const [isLoadingCoa, setIsLoadingCoa] = useState<boolean>(false);
+
+  // Helper function to get auth token
+  const getAuthToken = () => {
+    const authDataRaw = localStorage.getItem(
+      "sb-xwfkrjtqcqmmpclioakd-auth-token"
+    );
+    if (!authDataRaw) {
+      throw new Error("No access token found in localStorage");
+    }
+    const authData = JSON.parse(authDataRaw);
+    const token = authData.access_token;
+    if (!token) {
+      throw new Error("Access token missing in parsed auth data");
+    }
+    return token;
+  };
+
+  // Fetch COA options khusus vendor
+  useEffect(() => {
+    let abort = false;
+    const doFetch = async () => {
+      if (!openVendorCoa) return;
+      setIsLoadingVendorCoa(true);
+      try {
+        const token = getAuthToken();
+        const q = encodeURIComponent(coaSearch || "");
+        const resp = await fetch(
+          `https://pbw-backend-api.vercel.app/api/dashboard?action=getAccountCOA&search=${q}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (abort) return;
+        const json = await resp.json();
+        const list = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+          ? json
+          : [];
+        const mapped = list.map((x: any, idx: number) => {
+          const id = String(x.id || x.code || x.account_code || idx);
+          const name =
+            x.name || x.account_name || x.label || x.title || "Account";
+          const code = x.code || x.account_code || "";
+          const label = code ? `${code} - ${name}` : name;
+          return { id, label };
+        });
+        setVendorCoaOptions(mapped);
+      } catch (e) {
+        if (!abort) setVendorCoaOptions([]);
+      } finally {
+        if (!abort) setIsLoadingVendorCoa(false);
+      }
+    };
+    doFetch();
+    return () => {
+      abort = true;
+    };
+  }, [coaSearch, openVendorCoa]);
 
   // Retur items section
   const [returItems, setReturItems] = useState<PurchaseItem[]>([
@@ -130,13 +207,6 @@ export function CreatePurchaseForm({
   const [vendorAddress, setVendorAddress] = useState("");
   const [vendorPhone, setVendorPhone] = useState("");
 
-  const [openCoaForItemId, setOpenCoaForItemId] = useState<string | null>(null);
-  const [coaSearch, setCoaSearch] = useState<string>("");
-  const [coaOptions, setCoaOptions] = useState<
-    Array<{ id: string; label: string }>
-  >([]);
-  const [isLoadingCoa, setIsLoadingCoa] = useState<boolean>(false);
-
   const [startDate, setStartDate] = useState(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
@@ -170,7 +240,21 @@ export function CreatePurchaseForm({
   // Calculate DPP (Dasar Pengenaan Pajak) - based on subtotal + additional costs
   const calculateDpp = () => {
     const subtotalWithCosts = calculateSubtotalWithCosts();
-    return (11 / 12) * subtotalWithCosts;
+    const rate = ppnRate === "11" ? 0.11 : 0.12;
+
+    if (!isTaxAfter) {
+      if (rate == 0.11) {
+        return subtotalWithCosts;
+      } else {
+        return (11 / 12) * subtotalWithCosts;
+      }
+    } else {
+      if (rate == 0.11) {
+        return subtotalWithCosts / 1.11;
+      } else {
+        return subtotalWithCosts / 1.12;
+      }
+    }
   };
 
   // Calculate PPN (VAT)
@@ -179,7 +263,11 @@ export function CreatePurchaseForm({
     if (!isTaxAfter) {
       return calculateDpp() * rate;
     } else {
-      return calculateDpp() * rate * 0.1;
+      if (rate == 0.11) {
+        return (calculateDpp() * 11) / 100;
+      } else {
+        return (calculateDpp() * 12) / 100;
+      }
     }
   };
 
@@ -211,6 +299,12 @@ export function CreatePurchaseForm({
     const subtotalWithCosts = calculateSubtotalWithCosts();
     const ppn = calculatePpn();
     const pph = calculatePph();
+    // console.log("Grand Total Calc:", { subtotalWithCosts, ppn, pph });
+
+    if (isTaxAfter) {
+      return calculateDpp() + ppn - pph;
+    }
+
     return subtotalWithCosts + ppn - pph;
   };
 
@@ -352,23 +446,23 @@ export function CreatePurchaseForm({
         formData.validUntil = validUntil;
         formData.terms = terms;
         formData.quotationDate = date;
+        formData.grandTotal = calculateSubtotalWithCosts();
+        formData.dpp = 0;
+        formData.ppn = 0;
+        formData.pph = 0;
+
+        // NOTED!
+        formData.ppnPercentage = 0;
+        formData.pphPercentage = 0;
+        console.log("Kirim ke API:", {
+          ppnPercentage: formData.ppnPercentage,
+          pphPercentage: formData.pphPercentage,
+        });
         break;
     }
 
     onSubmit?.(formData);
   };
-
-  useEffect(() => {
-    // ✅ Saat halaman edit dimount
-    document.documentElement.style.overflow = "auto"; // html
-    document.body.style.overflow = "auto"; // body
-
-    return () => {
-      // ✅ Kembalikan seperti semula saat user keluar dari halaman
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    };
-  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -464,7 +558,7 @@ export function CreatePurchaseForm({
   }, [initialData]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 overflow-auto h-[80vh]">
       <PurchaseInformationForm
         purchaseType={purchaseType}
         setPurchaseType={setPurchaseType}
@@ -568,7 +662,7 @@ export function CreatePurchaseForm({
             {purchaseType === "invoice" && (
               <div className="space-y-2">
                 <Label>Vendor COA</Label>
-                <Popover
+                {/* <Popover
                   open={openCoaForItemId === "vendor"}
                   onOpenChange={(o) => setOpenCoaForItemId(o ? "vendor" : null)}
                 >
@@ -601,6 +695,50 @@ export function CreatePurchaseForm({
                                 setVendorCoaAccountId(opt.id);
                                 setVendorCoaLabel(opt.label);
                                 setOpenCoaForItemId(null);
+                                setCoaSearch("");
+                              }}
+                            >
+                              {opt.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover> */}
+
+                <Popover open={openVendorCoa} onOpenChange={setOpenVendorCoa}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start"
+                    >
+                      {vendorCoaLabel || "Select vendor account"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[320px]">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search account..."
+                        value={coaSearch}
+                        onValueChange={(v) => setCoaSearch(v)}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {isLoadingVendorCoa
+                            ? "Loading..."
+                            : "No results found."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {vendorCoaOptions.map((opt) => (
+                            <CommandItem
+                              key={opt.id}
+                              value={opt.label}
+                              onSelect={() => {
+                                setVendorCoaAccountId(opt.id);
+                                setVendorCoaLabel(opt.label);
+                                setOpenVendorCoa(false);
                                 setCoaSearch("");
                               }}
                             >
@@ -757,6 +895,8 @@ export function CreatePurchaseForm({
         purchaseType={purchaseType}
         title="Items"
         onNetTotalChange={setItemsNetTotal}
+        discountModeByItem={discountModeByItem}
+        setDiscountModeByItem={setDiscountModeByItem}
         // showCosts={false}
         showTax={false}
         showGrandTotal={false}
@@ -859,7 +999,6 @@ export function CreatePurchaseForm({
 
       {/* Tax Calculation Section */}
       {(purchaseType === "invoice" ||
-        purchaseType === "quotation" ||
         purchaseType === "shipment" ||
         purchaseType === "request") && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -1008,7 +1147,15 @@ export function CreatePurchaseForm({
         <div className="flex justify-between items-center">
           <Label className="text-lg font-semibold">Grand Total</Label>
           <div className="text-xl font-bold">
-            {formatCurrency(calculateGrandTotal())}
+            {purchaseType === "quotation" ? (
+              <div className="text-xl font-bold">
+                {formatCurrency(calculateSubtotalWithCosts())}
+              </div>
+            ) : (
+              <div className="text-xl font-bold">
+                {formatCurrency(calculateGrandTotal())}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -40,6 +40,10 @@ interface PurchaseItemsFormProps {
   // showCosts?: boolean;
   showTax?: boolean; // override; if undefined, follows invoice logic
   showGrandTotal?: boolean;
+  discountModeByItem: Record<string, "percent" | "nominal">;
+  setDiscountModeByItem: React.Dispatch<
+    React.SetStateAction<Record<string, "percent" | "nominal">>
+  >;
 }
 
 export function PurchaseItemsForm({
@@ -47,6 +51,8 @@ export function PurchaseItemsForm({
   setItems,
   onTotalChange,
   onNetTotalChange,
+  discountModeByItem,
+  setDiscountModeByItem,
   purchaseType, // Receive purchaseType prop
   title = "Items",
   // showCosts = true,
@@ -59,22 +65,47 @@ export function PurchaseItemsForm({
   );
   const [customTaxRate, setCustomTaxRate] = useState<string>("0");
   const [ppnRate, setPpnRate] = useState<"11" | "12">("11");
-  const [discountModeByItem, setDiscountModeByItem] = useState<
-    Record<string, "percent" | "nominal">
-  >({});
+  // const [discountModeByItem, setDiscountModeByItem] = useState<
+  //   Record<string, "percent" | "nominal">
+  // >({});
 
   // ✅ Sinkronisasi mode diskon awal berdasarkan props.items
+  // useEffect(() => {
+  //   const newModes: Record<string, "percent" | "nominal"> = {};
+  //   items.forEach((item) => {
+  //     if (item.discountType === "rupiah") {
+  //       newModes[item.id] = "nominal";
+  //     } else {
+  //       newModes[item.id] = "percent";
+  //     }
+  //   });
+  //   setDiscountModeByItem(newModes);
+  // }, [items]);
+
   useEffect(() => {
-    const newModes: Record<string, "percent" | "nominal"> = {};
-    items.forEach((item) => {
-      if (item.discountType === "rupiah") {
-        newModes[item.id] = "nominal";
-      } else {
-        newModes[item.id] = "percent";
-      }
+    setDiscountModeByItem((prev) => {
+      // copy previous
+      const next: Record<string, "percent" | "nominal"> = { ...prev };
+
+      // add default for new items (do not overwrite existing keys)
+      items.forEach((item) => {
+        if (!(item.id in next)) {
+          next[item.id] =
+            item.discountType === "rupiah" ? "nominal" : "percent";
+        }
+      });
+
+      // remove keys that no longer exist (cleanup)
+      Object.keys(next).forEach((key) => {
+        if (!items.find((it) => it.id === key)) {
+          delete next[key];
+        }
+      });
+
+      return next;
     });
-    setDiscountModeByItem(newModes);
-  }, [items]);
+    // only re-run when the list of item ids changes (not on every edit)
+  }, [items.map((i) => i.id).join(",")]);
 
   const [freightIn, setFreightIn] = useState<number>(0);
   const [insuranceCost, setInsuranceCost] = useState<number>(0);
@@ -141,14 +172,34 @@ export function PurchaseItemsForm({
     );
   };
 
+  // const calculateItemDiscount = (item: PurchaseItem) => {
+  //   const lineTotal = item.quantity * item.price;
+  //   const mode = discountModeByItem[item.id] ?? "percent";
+  //   if (mode === "percent") {
+  //     const percent = (item.discountPercent ?? 0) / 100;
+  //     const percentDiscount = lineTotal * percent;
+  //     return Math.min(percentDiscount, lineTotal);
+  //   }
+  //   const priceDiscount = item.discountPrice ?? 0;
+  //   return Math.min(priceDiscount, lineTotal);
+  // };
+
   const calculateItemDiscount = (item: PurchaseItem) => {
-    const lineTotal = item.quantity * item.price;
+    // Hitung jumlah efektif (setelah retur jika ada)
+    const effectiveQty =
+      typeof item.return === "number"
+        ? Math.max(item.quantity - item.return, 0)
+        : item.quantity;
+
+    const lineTotal = effectiveQty * item.price;
     const mode = discountModeByItem[item.id] ?? "percent";
+
     if (mode === "percent") {
       const percent = (item.discountPercent ?? 0) / 100;
       const percentDiscount = lineTotal * percent;
       return Math.min(percentDiscount, lineTotal);
     }
+
     const priceDiscount = item.discountPrice ?? 0;
     return Math.min(priceDiscount, lineTotal);
   };
@@ -500,13 +551,38 @@ export function PurchaseItemsForm({
                     checked={
                       (discountModeByItem[item.id] ?? "percent") === "percent"
                     }
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => {
+                      // 1) update map mode (merge)
                       setDiscountModeByItem((prev) => ({
                         ...prev,
                         [item.id]: checked ? "percent" : "nominal",
-                      }))
-                    }
+                      }));
+
+                      // 2) update items in one functional update (avoid race)
+                      setItems((prevItems) =>
+                        prevItems.map((it) => {
+                          if (it.id !== item.id) return it;
+                          // if switching to percent, zero nominal; if to nominal, zero percent
+                          if (checked) {
+                            return {
+                              ...it,
+                              discountPrice: 0,
+                              discountPercent: it.discountPercent ?? 0,
+                              discountType: "percent",
+                            };
+                          } else {
+                            return {
+                              ...it,
+                              discountPercent: 0,
+                              discountPrice: it.discountPrice ?? 0,
+                              discountType: "rupiah",
+                            };
+                          }
+                        })
+                      );
+                    }}
                   />
+
                   <Label htmlFor={`discount-mode-${item.id}`}>
                     {(discountModeByItem[item.id] ?? "percent") === "percent"
                       ? "Discount (%)"

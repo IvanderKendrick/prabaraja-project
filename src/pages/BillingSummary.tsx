@@ -1,27 +1,9 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoreHorizontal, Eye, Edit, Printer } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -64,9 +46,7 @@ interface ApiResponse {
 }
 
 const getAuthToken = () => {
-  const authDataRaw = localStorage.getItem(
-    "sb-xwfkrjtqcqmmpclioakd-auth-token"
-  );
+  const authDataRaw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
   if (!authDataRaw) throw new Error("No access token found in localStorage");
   const authData = JSON.parse(authDataRaw);
   const token = authData.access_token;
@@ -103,7 +83,20 @@ const BillingSummary = () => {
     getBillingOrder: "order",
   };
 
-  const mappedRows = useMemo(() => {
+  const mappedRows = useMemo<
+    Array<{
+      id: string;
+      vendorName: string;
+      date: string | null;
+      number: string;
+      remainBalance: number;
+      paidAmount: number;
+      totalAmount: number;
+      status: string;
+      readyForPayment: boolean;
+      items: unknown;
+    }>
+  >(() => {
     return rows.map((r) => {
       let parsedItems: unknown = r.items;
       if (typeof parsedItems === "string") {
@@ -115,48 +108,34 @@ const BillingSummary = () => {
       }
 
       // determine if invoice has the required fields for Payment
-      const paymentMethodField =
-        typeof r.payment_method === "string"
-          ? (r.payment_method as string)
-          : String(r.payment_method ?? "");
-      const vendorObjName =
-        r.vendor &&
-        typeof r.vendor === "object" &&
-        (r.vendor as Record<string, unknown>).name
-          ? String((r.vendor as Record<string, unknown>).name)
-          : undefined;
+      const paymentMethodField = typeof r.payment_method === "string" ? (r.payment_method as string) : String(r.payment_method ?? "");
+      const vendorObjName = r.vendor && typeof r.vendor === "object" && (r.vendor as Record<string, unknown>).name ? String((r.vendor as Record<string, unknown>).name) : undefined;
       const hasVendor = Boolean(r.vendor_name || vendorObjName || r.vendor_COA);
       const hasPaymentCoaOrName = Boolean(r.payment_COA || r.payment_name);
-      const paidAmtNum = Number(r.paid_amount ?? 0);
-      const installmentOk =
-        paymentMethodField === "Partial Payment"
-          ? Boolean(r.installment_type)
-          : true;
-      const readyForPayment = Boolean(
-        paymentMethodField &&
-          hasVendor &&
-          hasPaymentCoaOrName &&
-          paidAmtNum > 0 &&
-          installmentOk
-      );
+      // For billing orders the API may use `installment_amount` as the amount to be paid
+      // prefer paid_amount (invoices) but fall back to installment_amount (orders)
+      const paidAmtNum = Number(r.paid_amount ?? r.installment_amount ?? 0);
+      const installmentOk = paymentMethodField === "Partial Payment" ? Boolean(r.installment_type) : true;
+      // For Billing Order tab the payment method may not be set; allow readyForPayment
+      // when vendor, payment COA/name and amount are present. For invoices require payment method.
+      const readyForPayment = action === "getBillingOrder" ? Boolean(hasVendor && hasPaymentCoaOrName && paidAmtNum > 0 && installmentOk) : Boolean(paymentMethodField && hasVendor && hasPaymentCoaOrName && paidAmtNum > 0 && installmentOk);
 
       return {
-        id:
-          r.id ||
-          `${r.vendor_name || r.vendor?.name || "-"}-${
-            r.invoice_date || r.order_date || r.date || ""
-          }`,
+        id: r.id || `${r.vendor_name || r.vendor?.name || "-"}-${r.invoice_date || r.order_date || r.date || ""}`,
         vendorName: r.vendor_name || r.vendor?.name || "-",
         date: r.invoice_date || r.order_date || r.date || null,
         number: r.number || "-",
-        terms: r.terms ?? r.terms_discount ?? "-",
+        // For billing invoice view we want to show the remain_balance field
+        remainBalance: Number(r.remain_balance ?? 0),
+        // Paid amount (take directly from API paid_amount when present)
+        paidAmount: typeof r.paid_amount === "number" ? r.paid_amount : Number(r.paid_amount ?? 0),
         totalAmount: r.grand_total ?? r.amount ?? 0,
         status: r.status || "-",
         readyForPayment,
         items: parsedItems,
       };
     });
-  }, [rows]);
+  }, [rows, action]);
 
   const fetchData = async () => {
     try {
@@ -180,8 +159,7 @@ const BillingSummary = () => {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
       const json: ApiResponse = await res.json();
-      if (json.error)
-        throw new Error(json.message || "Failed to fetch billing data");
+      if (json.error) throw new Error(json.message || "Failed to fetch billing data");
 
       const data = json.data || [];
       setRows(data);
@@ -213,19 +191,12 @@ const BillingSummary = () => {
       <Sidebar />
 
       <div className="flex-1 overflow-auto">
-        <Header
-          title="Billing Summary"
-          description="Summary of charges per invoice with payment and print actions"
-        />
+        <Header title="Billing Summary" description="Summary of charges per invoice with payment and print actions" />
 
         <div className="p-6">
           <div className="mb-4 space-y-3">
             <div className="">
-              <StatsCards
-                unpaidAmount={unpaidAmount}
-                overdueCount={overdueCount}
-                last30DaysPayments={last30DaysPayments}
-              />
+              <StatsCards unpaidAmount={unpaidAmount} overdueCount={overdueCount} last30DaysPayments={last30DaysPayments} />
             </div>
 
             {/* Tabs for desktop, Select for mobile */}
@@ -257,20 +228,14 @@ const BillingSummary = () => {
                   <SelectValue placeholder="Pilih tipe billing" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="getBillingInvoice">
-                    Billing Invoice
-                  </SelectItem>
+                  <SelectItem value="getBillingInvoice">Billing Invoice</SelectItem>
                   <SelectItem value="getBillingOrder">Billing Order</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {error && (
-            <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          {error && <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
           <div className="rounded-md border">
             <Table>
@@ -279,30 +244,23 @@ const BillingSummary = () => {
                   <TableHead>Vendor Name</TableHead>
 
                   {/* ✅ Ubah nama kolom tanggal tergantung jenis billing */}
-                  <TableHead>
-                    {action === "getBillingOrder"
-                      ? "Order Date"
-                      : "Invoice Date"}
-                  </TableHead>
+                  <TableHead>{action === "getBillingOrder" ? "Order Date" : "Invoice Date"}</TableHead>
 
                   {action === "getBillingInvoice" ? (
                     <>
                       {/* ✅ Billing Invoice */}
                       <TableHead>Transaction Number</TableHead>
-                      <TableHead>Terms & Payment Disc</TableHead>
+                      <TableHead>Remain Balance</TableHead>
                     </>
                   ) : (
                     <>
                       {/* ✅ Billing Order */}
                       <TableHead>Transaction Number</TableHead>
+                      <TableHead>Paid Amount</TableHead>
                     </>
                   )}
 
-                  <TableHead>
-                    {action === "getBillingOrder"
-                      ? "Order Total Charges"
-                      : "Invoice Total Charges"}
-                  </TableHead>
+                  <TableHead>{action === "getBillingOrder" ? "Order Total Charges" : "Invoice Total Charges"}</TableHead>
 
                   <TableHead>Status</TableHead>
                   <TableHead>Payment Button</TableHead>
@@ -313,50 +271,37 @@ const BillingSummary = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Memuat data...
                     </TableCell>
                   </TableRow>
                 ) : mappedRows.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No billing data yet
                     </TableCell>
                   </TableRow>
                 ) : (
                   mappedRows.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="font-medium">
-                        {row.vendorName}
-                      </TableCell>
+                      <TableCell className="font-medium">{row.vendorName}</TableCell>
 
                       {/* ✅ Format tanggal tetap sama, hanya label di header yang berubah */}
-                      <TableCell>
-                        {row.date
-                          ? format(new Date(row.date), "dd/MM/yyyy")
-                          : "-"}
-                      </TableCell>
+                      <TableCell>{row.date ? format(new Date(row.date), "dd/MM/yyyy") : "-"}</TableCell>
 
                       {action === "getBillingInvoice" ? (
                         <>
                           <TableCell>{String(row.number ?? "-")}</TableCell>
-                          <TableCell>{row.terms}</TableCell>
+                          <TableCell>{typeof row.remainBalance === "number" ? `Rp ${formatPriceWithSeparator(row.remainBalance)}` : "-"}</TableCell>
                         </>
                       ) : (
                         <>
                           <TableCell>{String(row.number ?? "-")}</TableCell>
+                          <TableCell className="font-medium">{typeof row.paidAmount === "number" && row.paidAmount > 0 ? `Rp ${formatPriceWithSeparator(row.paidAmount)}` : "-"}</TableCell>
                         </>
                       )}
 
-                      <TableCell className="font-medium">
-                        Rp {formatPriceWithSeparator(row.totalAmount)}
-                      </TableCell>
+                      <TableCell className="font-medium">Rp {formatPriceWithSeparator(row.totalAmount)}</TableCell>
 
                       <TableCell>
                         <span
@@ -365,8 +310,7 @@ const BillingSummary = () => {
                               ? "bg-green-100 text-green-800"
                               : row.status?.toLowerCase() === "pending"
                               ? "bg-yellow-100 text-yellow-800"
-                              : row.status?.toLowerCase() === "unpaid" ||
-                                row.status?.toLowerCase() === "paid"
+                              : row.status?.toLowerCase() === "unpaid" || row.status?.toLowerCase() === "paid"
                               ? "bg-red-100 text-red-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
@@ -378,50 +322,30 @@ const BillingSummary = () => {
                       <TableCell>
                         <Button
                           size="sm"
-                          className={`${
-                            row.status?.toLowerCase() === "completed" ||
-                            !row.readyForPayment
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-green-500 hover:bg-green-600"
-                          }`}
+                          className={`${row.status?.toLowerCase() === "completed" || !row.readyForPayment ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600"}`}
                           onClick={async () => {
-                            if (
-                              row.status?.toLowerCase() === "completed" ||
-                              !row.readyForPayment
-                            )
-                              return;
+                            if (row.status?.toLowerCase() === "completed" || !row.readyForPayment) return;
 
                             // Tentukan action API berdasarkan tab aktif
-                            const actionToSend =
-                              action === "getBillingInvoice"
-                                ? "sendBillingInvoiceToCOA"
-                                : "sendBillingOrderToCOA";
+                            const actionToSend = action === "getBillingInvoice" ? "sendBillingInvoiceToCOA" : "sendBillingOrderToCOA";
 
                             try {
                               setSendingId(String(row.id));
                               const token = getAuthToken();
 
-                              const res = await fetch(
-                                "https://pbw-backend-api.vercel.app/api/purchases",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    Authorization: `Bearer ${token}`,
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    action: actionToSend,
-                                    id: row.id,
-                                  }),
-                                }
-                              );
+                              const res = await fetch("https://pbw-backend-api.vercel.app/api/purchases", {
+                                method: "POST",
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ action: actionToSend, id: row.id }),
+                              });
 
                               const json = await res.json();
 
                               if (!res.ok || json.error) {
-                                toast.error(
-                                  json.message || "Failed to send to COA"
-                                );
+                                toast.error(json.message || "Failed to send to COA");
                                 return;
                               }
 
@@ -429,22 +353,14 @@ const BillingSummary = () => {
                               fetchData(); // Refresh tabel
                             } catch (err: unknown) {
                               console.error(err);
-                              toast.error(
-                                "Failed to send to COA. Please try again."
-                              );
+                              toast.error("Failed to send to COA. Please try again.");
                             } finally {
                               setSendingId(null);
                             }
                           }}
-                          disabled={
-                            sendingId === String(row.id) ||
-                            row.status?.toLowerCase() === "completed" ||
-                            !row.readyForPayment
-                          }
+                          disabled={sendingId === String(row.id) || row.status?.toLowerCase() === "completed" || !row.readyForPayment}
                         >
-                          {sendingId === String(row.id)
-                            ? "Sending..."
-                            : "Payment"}
+                          {sendingId === String(row.id) ? "Sending..." : "Payment"}
                         </Button>
                       </TableCell>
 
@@ -460,10 +376,7 @@ const BillingSummary = () => {
                             <DropdownMenuItem
                               onClick={() => {
                                 // Navigate to the correct view page depending on current action
-                                const target =
-                                  action === "getBillingInvoice"
-                                    ? `/billing-invoice/view/${row.id}`
-                                    : `/billing-order/view/${row.id}`;
+                                const target = action === "getBillingInvoice" ? `/billing-invoice/view/${row.id}` : `/billing-order/view/${row.id}`;
                                 window.location.href = target;
                               }}
                             >
@@ -473,20 +386,12 @@ const BillingSummary = () => {
                             {action === "getBillingOrder" ? (
                               <DropdownMenuItem
                                 onClick={() => {
-                                  if (
-                                    row.status?.toLowerCase() !== "completed"
-                                  ) {
+                                  if (row.status?.toLowerCase() !== "completed") {
                                     window.location.href = `/billing-order/edit/${row.id}`;
                                   }
                                 }}
-                                disabled={
-                                  row.status?.toLowerCase() === "completed"
-                                }
-                                className={
-                                  row.status?.toLowerCase() === "completed"
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : ""
-                                }
+                                disabled={row.status?.toLowerCase() === "completed"}
+                                className={row.status?.toLowerCase() === "completed" ? "text-gray-400 cursor-not-allowed" : ""}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
@@ -494,21 +399,12 @@ const BillingSummary = () => {
                             ) : (
                               <DropdownMenuItem
                                 onClick={() => {
-                                  if (
-                                    row.status?.toLowerCase() === "pending" ||
-                                    row.status?.toLowerCase() === "unpaid"
-                                  ) {
+                                  if (row.status?.toLowerCase() === "pending" || row.status?.toLowerCase() === "unpaid") {
                                     window.location.href = `/billing-invoice/edit/${row.id}`;
                                   }
                                 }}
-                                disabled={
-                                  row.status?.toLowerCase() === "completed"
-                                }
-                                className={
-                                  row.status?.toLowerCase() === "completed"
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : ""
-                                }
+                                disabled={row.status?.toLowerCase() === "completed"}
+                                className={row.status?.toLowerCase() === "completed" ? "text-gray-400 cursor-not-allowed" : ""}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit

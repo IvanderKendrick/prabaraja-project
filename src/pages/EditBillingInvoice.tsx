@@ -64,6 +64,8 @@ const EditBillingInvoice: React.FC = () => {
   const [paymentDate, setPaymentDate] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  // One-time sync guard to initialize labels/names from COA after options load
+  const [hasInitializedFromCOA, setHasInitializedFromCOA] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -162,7 +164,56 @@ const EditBillingInvoice: React.FC = () => {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Initialize COA labels and names once when COA options become available to avoid empty fields
+  useEffect(() => {
+    if (hasInitializedFromCOA) return;
+    if (!coaOptions || coaOptions.length === 0) return;
+
+    // Initialize Vendor from COA if needed
+    if (vendorCOAId || vendorCOALabel) {
+      const vendorMatch = coaOptions.find((c) => String(c.value) === String(vendorCOAId) || String(c.account_code) === String(vendorCOALabel));
+      if (vendorMatch) {
+        if (!vendorCOALabel || !vendorCOALabel.includes(" - ")) setVendorCOALabel(vendorMatch.label);
+        if (!vendorName) setVendorName(extractNameFromCOA(vendorMatch.label));
+      }
+    }
+
+    // Initialize Payment from COA if needed
+    if (paymentCOAId || paymentCOALabel) {
+      const paymentMatch = coaOptions.find((c) => String(c.value) === String(paymentCOAId) || String(c.account_code) === String(paymentCOALabel));
+      if (paymentMatch) {
+        if (!paymentCOALabel || !paymentCOALabel.includes(" - ")) setPaymentCOALabel(paymentMatch.label);
+        if (!paymentName) setPaymentName(extractNameFromCOA(paymentMatch.label));
+      }
+    }
+
+    setHasInitializedFromCOA(true);
+  }, [coaOptions, hasInitializedFromCOA, vendorCOAId, vendorCOALabel, vendorName, paymentCOAId, paymentCOALabel, paymentName]);
+
+  // Auto-sync vendor name and vendor COA if one of them changes
+  useEffect(() => {
+    if (!coaOptions || coaOptions.length === 0) return;
+
+    // If vendorName changed and COA not set, find corresponding COA
+    if (vendorName && !vendorCOAId) {
+      const matchingCOA = findCOAByName(vendorName);
+      if (matchingCOA) {
+        setVendorCOAId(matchingCOA.value);
+        setVendorCOALabel(matchingCOA.label);
+      }
+    }
+
+    // If COA changed but name not set, update vendorName
+    if (vendorCOAId && !vendorName) {
+      const coa = coaOptions.find((c) => String(c.value) === String(vendorCOAId));
+      if (coa) {
+        setVendorName(extractNameFromCOA(coa.label));
+      }
+    }
+  }, [vendorName, vendorCOAId, coaOptions]);
 
   // Logic for enabling/disabling fields
   const isPartial = paymentMethod === "Partial Payment";
@@ -208,10 +259,20 @@ const EditBillingInvoice: React.FC = () => {
       toast.error("Payment Method is required");
       return;
     }
-    if (!vendorCOAId || !vendorName) {
-      toast.error("Vendor COA and Vendor Name are required");
+    if (!vendorName && !vendorCOAId) {
+      toast.error("Vendor Name or Vendor COA is required");
       return;
     }
+
+    // Auto-fill vendor COA from name if missing
+    if (!vendorCOAId && vendorName) {
+      const matchingCOA = findCOAByName(vendorName);
+      if (matchingCOA) {
+        setVendorCOAId(matchingCOA.value);
+        setVendorCOALabel(matchingCOA.label);
+      }
+    }
+
     if (!paymentCOAId || !paymentName) {
       toast.error("Payment COA and Payment Name are required");
       return;
@@ -269,14 +330,29 @@ const EditBillingInvoice: React.FC = () => {
       apiForm.append("id", id);
       apiForm.append("vendor_COA", vendorCOACode ?? "");
       apiForm.append("vendor_name", vendorName);
+      // also send alias keys for backend compatibility
+      apiForm.append("vendorName", vendorName);
       apiForm.append("memo", memo);
       // Handle attachments:
-      // - If user uploaded new files, append each file under the key 'attachment_url' (backend expects file field).
-      //   Also send existingFiles under 'existingFiles' so backend can merge/keep them if supported.
+      // - If user uploaded new files, append each file. ALSO send existing files list so backend preserves them.
       // - If no new files uploaded, send attachment_url as JSON array of existingFiles (backward compatible).
       if (attachments && attachments.length > 0) {
         // include existing files list so backend can preserve them
-        if (existingFiles && existingFiles.length > 0) apiForm.append("existingFiles", JSON.stringify(existingFiles));
+        if (existingFiles && existingFiles.length > 0) {
+          apiForm.append("existingFiles", JSON.stringify(existingFiles));
+          // also include common alternative key for compatibility
+          try {
+            apiForm.append("existing_files", JSON.stringify(existingFiles));
+          } catch (_e) {
+            /* ignore */
+          }
+          // Add also under attachment_url as JSON for backends that rely on this key to keep existing ones
+          try {
+            apiForm.append("attachment_url", JSON.stringify(existingFiles));
+          } catch (_e) {
+            apiForm.append("attachment_url", "[]");
+          }
+        }
         // Append new files using array-style keys to improve backend compatibility
         attachments.forEach((f) => {
           apiForm.append("attachment_url[]", f);
@@ -304,6 +380,8 @@ const EditBillingInvoice: React.FC = () => {
       apiForm.append("payment_method", paymentMethod);
       apiForm.append("payment_COA", paymentCOACode ?? "");
       apiForm.append("payment_name", paymentName);
+      // also send alias keys for backend compatibility
+      apiForm.append("paymentName", paymentName);
       apiForm.append("installment_type", installmentType);
       apiForm.append("paid_amount", String(paidAmount ?? ""));
 
@@ -376,7 +454,7 @@ const EditBillingInvoice: React.FC = () => {
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <Header title="Edit Billing Invoice" description="Edit billing invoice details" />
-        <div className="p-6 max-w-2xl mx-auto">
+        <div className="p-6 max-w-5xl mx-auto">
           <form
             className="space-y-6"
             onSubmit={(e) => {
@@ -384,142 +462,141 @@ const EditBillingInvoice: React.FC = () => {
               handleSubmit();
             }}
           >
-            {/* 1. Payment Method */}
-            <div>
-              <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={!!disableAllExceptPaidAmount}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethodOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Two-column form fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left column */}
+              <div className="space-y-6">
+                {/* 1. Payment Method */}
+                <div>
+                  <Label>Payment Method</Label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={!!disableAllExceptPaidAmount}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethodOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* 2. Vendor COA */}
-            <div>
-              <Label>Vendor COA</Label>
-              <CoaSelect
-                valueId={vendorCOAId}
-                valueLabel={getDisplayValueForCOA(vendorCOALabel)}
-                onSelect={(id, label) => {
-                  setVendorCOAId(id);
-                  setVendorCOALabel(label);
-                  // Auto-set vendor name from selected COA
-                  setVendorName(extractNameFromCOA(label));
-                }}
-                placeholder="Select Vendor COA"
-                disabled={Boolean(status && String(status).toLowerCase() === "pending")}
-              />
-            </div>
+                {/* 2. Vendor COA */}
+                <div>
+                  <Label>Vendor COA</Label>
+                  <CoaSelect
+                    valueId={vendorCOAId}
+                    valueLabel={getDisplayValueForCOA(vendorCOALabel)}
+                    onSelect={(id, label) => {
+                      setVendorCOAId(id);
+                      setVendorCOALabel(label);
+                      // Auto-set vendor name from selected COA
+                      setVendorName(extractNameFromCOA(label));
+                    }}
+                    placeholder="Select Vendor COA"
+                    disabled={Boolean(status && String(status).toLowerCase() === "pending")}
+                  />
+                </div>
 
-            {/* 3. Vendor Name */}
-            <div>
-              <Label>Vendor Name</Label>
-              <Select
-                value={vendorName || ""}
-                onValueChange={(value) => {
-                  setVendorName(value);
-                  const matchingCOA = findCOAByName(value);
-                  if (matchingCOA) {
-                    setVendorCOAId(matchingCOA.value);
-                    setVendorCOALabel(matchingCOA.label);
-                  }
-                }}
-                disabled={!!disableAllExceptPaidAmount}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Vendor Name" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(coaOptions || []).map((coa) => {
-                    const name = extractNameFromCOA(coa.label);
-                    return name ? (
-                      <SelectItem key={coa.value} value={name}>
-                        {name}
-                      </SelectItem>
-                    ) : null;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* 3. Vendor Name (editable input with optional COA auto-match on blur) */}
+                <div>
+                  <Label>Vendor Name</Label>
+                  <Input
+                    value={vendorName}
+                    onChange={(e) => setVendorName(e.target.value)}
+                    onBlur={() => {
+                      // Try to auto-match a COA when the user finishes typing
+                      if (vendorName && !vendorCOAId) {
+                        const matchingCOA = findCOAByName(vendorName);
+                        if (matchingCOA) {
+                          setVendorCOAId(matchingCOA.value);
+                          setVendorCOALabel(matchingCOA.label);
+                        }
+                      }
+                    }}
+                    disabled={!!disableAllExceptPaidAmount}
+                    className="w-full"
+                  />
+                </div>
 
-            {/* 4. Payment COA */}
-            <div>
-              <Label>Payment COA</Label>
-              <CoaSelect
-                valueId={paymentCOAId}
-                valueLabel={getDisplayValueForCOA(paymentCOALabel)}
-                onSelect={(id, label) => {
-                  setPaymentCOAId(id);
-                  setPaymentCOALabel(label);
-                  // Auto-set payment name from selected COA
-                  setPaymentName(extractNameFromCOA(label));
-                }}
-                placeholder="Select Payment COA"
-                disabled={Boolean(status && String(status).toLowerCase() === "pending")}
-              />
-            </div>
+                {/* 4. Installment Type */}
+                <div>
+                  <Label>Installment Type</Label>
+                  <Select value={installmentType} onValueChange={setInstallmentType} disabled={!!(disableInstallmentType || disableAllExceptPaidAmount)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select installment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage / %</SelectItem>
+                      <SelectItem value="nominal">Nominal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            {/* 5. Payment Name */}
-            <div>
-              <Label>Payment Name</Label>
-              <Select
-                value={paymentName || ""}
-                onValueChange={(value) => {
-                  setPaymentName(value);
-                  const matchingCOA = findCOAByName(value);
-                  if (matchingCOA) {
-                    setPaymentCOAId(matchingCOA.value);
-                    setPaymentCOALabel(matchingCOA.label);
-                  }
-                }}
-                disabled={!!disableAllExceptPaidAmount}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Payment Name" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(coaOptions || []).map((coa) => {
-                    const name = extractNameFromCOA(coa.label);
-                    return name ? (
-                      <SelectItem key={coa.value} value={name}>
-                        {name}
-                      </SelectItem>
-                    ) : null;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Right column */}
+              <div className="space-y-6">
+                {/* 1. Payment COA */}
+                <div>
+                  <Label>Payment COA</Label>
+                  <CoaSelect
+                    valueId={paymentCOAId}
+                    valueLabel={getDisplayValueForCOA(paymentCOALabel)}
+                    onSelect={(id, label) => {
+                      setPaymentCOAId(id);
+                      setPaymentCOALabel(label);
+                      // Auto-set payment name from selected COA
+                      setPaymentName(extractNameFromCOA(label));
+                    }}
+                    placeholder="Select Payment COA"
+                    disabled={Boolean(status && String(status).toLowerCase() === "pending")}
+                  />
+                </div>
 
-            {/* 6. Installment Type */}
-            <div>
-              <Label>Installment Type</Label>
-              <Select value={installmentType} onValueChange={setInstallmentType} disabled={!!(disableInstallmentType || disableAllExceptPaidAmount)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select installment type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">Percentage / %</SelectItem>
-                  <SelectItem value="nominal">Nominal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                {/* 2. Payment Name */}
+                <div>
+                  <Label>Payment Name</Label>
+                  <Select
+                    value={paymentName || ""}
+                    onValueChange={(value) => {
+                      setPaymentName(value);
+                      const matchingCOA = findCOAByName(value);
+                      if (matchingCOA) {
+                        setPaymentCOAId(matchingCOA.value);
+                        setPaymentCOALabel(matchingCOA.label);
+                      }
+                    }}
+                    disabled={!!disableAllExceptPaidAmount}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Payment Name" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(coaOptions || []).map((coa) => {
+                        const name = extractNameFromCOA(coa.label);
+                        return name ? (
+                          <SelectItem key={coa.value} value={name}>
+                            {name}
+                          </SelectItem>
+                        ) : null;
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* 7. Paid Amount */}
-            <div>
-              <Label>Paid Amount</Label>
-              <Input
-                type="number"
-                value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value === "" ? "" : Number(e.target.value))}
-                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+                {/* 3. Paid Amount */}
+                <div>
+                  <Label>Paid Amount</Label>
+                  <Input
+                    type="number"
+                    value={paidAmount}
+                    onChange={(e) => setPaidAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* 8. Memo */}

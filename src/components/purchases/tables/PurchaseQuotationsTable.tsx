@@ -17,6 +17,16 @@ import {
   AlertCircle,
 } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -30,6 +40,7 @@ import {
 } from "@/hooks/usePurchaseQuotationsAPI";
 import { Pagination } from "@/components/Pagination";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 interface PurchaseQuotationsTableProps {
   onEdit?: (id: string) => void;
@@ -102,6 +113,30 @@ export function PurchaseQuotationsTable({
 
   // Transform API data to table format
   const quotations = transformAPIDataToTable(apiData);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
+
+  const handleDeleteClick = (id: string) => {
+    setInvoiceToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (invoiceToDelete) {
+      onDelete(invoiceToDelete);
+    }
+    setDeleteDialogOpen(false);
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 5000);
+  };
+
+  const cancelDelete = () => {
+    setInvoiceToDelete(null);
+    setDeleteDialogOpen(false);
+  };
 
   // Loading state
   if (isLoading) {
@@ -301,7 +336,7 @@ export function PurchaseQuotationsTable({
                         )}
                         {onDelete && (
                           <DropdownMenuItem
-                            onClick={() => onDelete(quotation.id)}
+                            onClick={() => handleDeleteClick(quotation.id)}
                             className="text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -330,6 +365,29 @@ export function PurchaseQuotationsTable({
           itemsPerPageOptions={[5, 10, 20, 50]}
         />
       )}
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Are you sure you want to delete this transaction?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              Quotation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDelete}>No</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Yes, Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

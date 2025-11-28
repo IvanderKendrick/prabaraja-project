@@ -162,7 +162,7 @@ export function PurchaseOffersDetail() {
                     <Building2 className="h-5 w-5" /> Vendor Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="flex items-start justify-between gap-6 text-sm">
                   <div>
                     <Label className="text-gray-600">Name</Label>
                     <p className="font-medium">{offer.vendor_name}</p>

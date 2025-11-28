@@ -64,7 +64,7 @@ export default function EditQuotationPage() {
         formData.quotationDate || quotation.quotation_date
       );
       apiFormData.append("due_date", formData.dueDate || quotation.due_date);
-      apiFormData.append("status", formData.status || quotation.status);
+      apiFormData.append("status", "Pending");
       apiFormData.append(
         "valid_until",
         formData.validUntil || quotation.valid_until
@@ -103,53 +103,64 @@ export default function EditQuotationPage() {
       );
       apiFormData.append(
         "total",
-        (formData.total || quotation.total || 0).toString()
+        (formData.total || quotation.grand_total || 0).toString()
       );
       apiFormData.append(
         "grand_total",
         (formData.grandTotal || quotation.grand_total || 0).toString()
       );
-      apiFormData.append(
-        "dpp",
-        (formData.dpp || quotation.dpp || 0).toString()
-      );
-      apiFormData.append(
-        "ppn",
-        (formData.ppn || quotation.ppn || 0).toString()
-      );
-      apiFormData.append(
-        "pph",
-        (formData.pph || quotation.pph || 0).toString()
-      );
-      apiFormData.append(
-        "ppn_percentage",
-        (formData.ppnPercentage || quotation.ppn_percentage || 11).toString()
-      );
-      apiFormData.append(
-        "pph_percentage",
-        (formData.pphPercentage || quotation.pph_percentage || 2).toString()
-      );
-      apiFormData.append(
-        "pph_type",
-        (formData.pphType || quotation.pph_type || "23").toString()
-      );
+      apiFormData.append("dpp", (0).toString());
+      apiFormData.append("ppn", (0).toString());
+      apiFormData.append("pph", (0).toString());
+      apiFormData.append("ppn_percentage", (0).toString());
+      apiFormData.append("pph_percentage", (0).toString());
+      apiFormData.append("pph_type", "custom");
 
       // 🧾 Items
-      const mappedItems = (formData.items || quotation.items || []).map(
-        (it: any) => {
-          const itemData: any = {
-            item_name: it.item_name || it.name || "",
-            qty: it.qty || it.quantity || 0,
-            unit: it.unit || "pcs",
-            price: it.price || 0,
-          };
-          if (it.disc_item && it.disc_item_type) {
-            itemData.disc_item = it.disc_item;
-            itemData.disc_item_type = it.disc_item_type;
-          }
-          return itemData;
+      // const mappedItems = (formData.items || quotation.items || []).map(
+      //   (it: any) => {
+      //     const itemData: any = {
+      //       item_name: it.name ?? it.item_name ?? "",
+      //       qty: it.quantity ?? it.qty ?? 0,
+      //       unit: it.unit ?? "pcs",
+      //       price: it.price ?? 0,
+      //     };
+
+      //     // Tambahkan diskon jika ada
+      //     if (it.discountPercent && it.discountPercent > 0) {
+      //       itemData.disc_item = it.discountPercent;
+      //       itemData.disc_item_type = "percentage";
+      //     } else if (it.discountPrice && it.discountPrice > 0) {
+      //       itemData.disc_item = it.discountPrice;
+      //       itemData.disc_item_type = "rupiah";
+      //     }
+
+      //     return itemData;
+      //   }
+      // );
+
+      // apiFormData.append("items", JSON.stringify(mappedItems));
+
+      // Map items with discount support
+      const mappedItems = (formData.items || []).map((it: any) => {
+        const itemData: any = {
+          item_name: it.name ?? it.item_name ?? "",
+          qty: it.quantity ?? it.qty ?? 0,
+          unit: it.unit ?? "kg",
+          price: it.price ?? 0,
+        };
+
+        // Add discount if exists
+        if (it.discountPercent && it.discountPercent > 0) {
+          itemData.disc_item = it.discountPercent;
+          itemData.disc_item_type = "percentage";
+        } else if (it.discountPrice && it.discountPrice > 0) {
+          itemData.disc_item = it.discountPrice;
+          itemData.disc_item_type = "rupiah";
         }
-      );
+
+        return itemData;
+      });
       apiFormData.append("items", JSON.stringify(mappedItems));
 
       // 🖼️ Attachment handling
@@ -169,7 +180,7 @@ export default function EditQuotationPage() {
 
       if (res.data && !res.data.error) {
         toast.success("Quotation updated successfully");
-        navigate(`/purchase-quotations/${id}`);
+        navigate("/purchases/quotations");
       } else {
         throw new Error(res.data?.message || "Failed to update quotation");
       }

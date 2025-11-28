@@ -297,9 +297,7 @@ const ViewBillingInvoice: React.FC = () => {
                         <TableCell>{item.qty}</TableCell>
                         <TableCell>{item.unit}</TableCell>
                         <TableCell>Rp {formatPriceWithSeparator(item.price)}</TableCell>
-                        <TableCell>
-                          {item.disc_item} {item.disc_item_type === "percentage" ? "%" : "Rp"}
-                        </TableCell>
+                        <TableCell>{item.disc_item == null ? "-" : item.disc_item_type === "percentage" ? `${item.disc_item}%` : `Rp ${formatPriceWithSeparator(item.disc_item)}`}</TableCell>
                         <TableCell>
                           {(() => {
                             const total = item.qty * item.price - (item.disc_item_type === "percentage" ? item.qty * item.price * (item.disc_item / 100) : item.disc_item);

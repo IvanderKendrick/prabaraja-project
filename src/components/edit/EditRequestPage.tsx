@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CreatePurchaseForm } from "../create/CreatePurchaseForm";
 import { PurchaseType } from "@/types/purchase";
+import { toast } from "sonner";
+import axios from "axios";
 
 export default function EditRequestPage() {
   const { id } = useParams();
@@ -130,7 +132,7 @@ export default function EditRequestPage() {
       // --- map field inti yang backend minta secara eksplisit ---
       apiFormData.append("date", formData.date || "");
       apiFormData.append("due_date", formData.dueDate || "");
-      apiFormData.append("status", (formData.status || "").toString());
+      apiFormData.append("status", "Pending");
       apiFormData.append("number", formData.number || "");
 
       apiFormData.append(
@@ -141,24 +143,50 @@ export default function EditRequestPage() {
       );
 
       // items -> backend format
-      const mappedItems = (formData.items || []).map((it: any) => {
-        const dType =
-          it.discountType ?? (it.discountPrice ? "rupiah" : "percentage");
+      // const mappedItems = (formData.items || []).map((it: any) => {
+      //   const dType =
+      //     it.discountType ?? (it.discountPrice ? "rupiah" : "percentage");
 
-        return {
-          item_name: it.name ?? it.item_name ?? "",
-          sku: it.sku ?? "",
-          qty: it.quantity ?? it.qty ?? 0,
-          unit: it.unit ?? "pcs",
-          price: it.price ?? 0,
-          ...(dType === "percentage"
-            ? {
-                disc_item: it.discountPercent ?? 0,
-                disc_item_type: "percentage",
-              }
-            : { disc_item: it.discountPrice ?? 0, disc_item_type: "rupiah" }),
+      //   return {
+      //     item_name: it.name ?? it.item_name ?? "",
+      //     sku: it.sku ?? "",
+      //     qty: it.quantity ?? it.qty ?? 0,
+      //     unit: it.unit ?? "pcs",
+      //     price: it.price ?? 0,
+      //     ...(dType === "percentage"
+      //       ? {
+      //           disc_item: it.discountPercent ?? 0,
+      //           disc_item_type: "percentage",
+      //         }
+      //       : { disc_item: it.discountPrice ?? 0, disc_item_type: "rupiah" }),
+      //   };
+      // });
+      // apiFormData.append("items", JSON.stringify(mappedItems));
+
+      // Map items with full support (discount, coa, return, memo, etc.)
+      const mappedItems = (formData.items || []).map((it: any) => {
+        const itemData: any = {
+          item_name: it.name ?? it.item_name ?? "", // nama item
+          sku: it.sku ?? "", // kode SKU
+          qty: it.quantity ?? it.qty ?? 0, // jumlah
+          unit: it.unit ?? "pcs", // satuan
+          price: it.price ?? 0, // harga
+          return_unit: it.return ?? it.return_unit ?? 0, // jumlah retur (default 0)
+          memo: it.memo ?? "-", // catatan per item
         };
+
+        // Handle discount (percentage or rupiah)
+        if (it.discountPercent && it.discountPercent > 0) {
+          itemData.disc_item = it.discountPercent;
+          itemData.disc_item_type = "percentage";
+        } else if (it.discountPrice && it.discountPrice > 0) {
+          itemData.disc_item = it.discountPrice;
+          itemData.disc_item_type = "rupiah";
+        }
+
+        return itemData;
       });
+
       apiFormData.append("items", JSON.stringify(mappedItems));
 
       // vendor
@@ -210,20 +238,42 @@ export default function EditRequestPage() {
         apiFormData.append("attachment_url", file);
       });
 
-      const res = await fetch(
-        `https://pbw-backend-api.vercel.app/api/purchases`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-          body: apiFormData,
-        }
+      //   const res = await fetch(
+      //     `https://pbw-backend-api.vercel.app/api/purchases`,
+      //     {
+      //       method: "PUT",
+      //       headers: { Authorization: `Bearer ${token}` },
+      //       body: apiFormData,
+      //     }
+      //   );
+
+      //   const result = await res.json();
+      //   console.log("✅ Response:", result);
+      //   navigate("/purchases/requests");
+      // } catch (error) {
+      //   console.error("❌ Failed:", error);
+      // } finally {
+      //   setIsLoading(false);
+      // }
+
+      // 🚀 API call pakai axios
+      const res = await axios.put(
+        "https://pbw-backend-api.vercel.app/api/purchases",
+        apiFormData,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const result = await res.json();
-      console.log("✅ Response:", result);
-      navigate("/purchases/requests");
-    } catch (error) {
-      console.error("❌ Failed:", error);
+      // ✅ Handling response
+      if (res.data && !res.data.error) {
+        toast.success("Request updated successfully");
+        console.log("✅ Response:", res.data);
+        navigate("/purchases/requests");
+      } else {
+        throw new Error(res.data?.message || "Failed to update request");
+      }
+    } catch (err: any) {
+      console.error("❌ Failed to update request:", err);
+      toast.error(err.message || "Failed to update request");
     } finally {
       setIsLoading(false);
     }

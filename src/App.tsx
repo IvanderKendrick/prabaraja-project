@@ -69,6 +69,12 @@ import EditBillingOrder from "./pages/EditBillingOrder";
 import EditRequestPage from "./components/edit/EditRequestPage";
 import EditShipmentPage from "./components/edit/EditShipmentPage";
 import EditInvoicePage from "./components/edit/EditInvoicePage";
+import Inventory from "./pages/Inventory/Inventory";
+import StockDetail from "./pages/Inventory/Stock/StockDetail";
+import ProductDetail from "./pages/Inventory/Product/ProductDetail";
+import AddNewProduct from "./pages/Inventory/Product/AddNewProduct";
+import Manufacture from "./pages/Manufacture/Manufacture";
+import AddNewBom from "./pages/Manufacture/BoM/AddNewBom";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +116,59 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Purchases />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/inventory/:tab"
+                element={
+                  <ProtectedRoute>
+                    <Inventory />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/inventory/stock/:id"
+                element={
+                  <ProtectedRoute>
+                    <StockDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inventory/product/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/inventory/product/add"
+                element={
+                  <ProtectedRoute>
+                    <AddNewProduct />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/manufacture"
+                element={
+                  <ProtectedRoute>
+                    <Manufacture />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/addnewbom"
+                element={
+                  <ProtectedRoute>
+                    <AddNewBom />
                   </ProtectedRoute>
                 }
               />

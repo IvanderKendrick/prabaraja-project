@@ -121,6 +121,10 @@ export function InvoicesTable({
       onDelete(invoiceToDelete);
     }
     setDeleteDialogOpen(false);
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 5000);
   };
 
   const cancelDelete = () => {
@@ -218,8 +222,6 @@ export function InvoicesTable({
               <TableHead>Invoice #</TableHead>
               <TableHead>Due Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Balance</TableHead>
-              <TableHead>Paid</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -266,12 +268,6 @@ export function InvoicesTable({
                         {invoice.status.charAt(0).toUpperCase() +
                           invoice.status.slice(1)}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      Rp {formatPriceWithSeparator(invoiceTotal)}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      Rp {formatPriceWithSeparator(paidAmount)}
                     </TableCell>
                     <TableCell className="font-medium">
                       Rp {formatPriceWithSeparator(remainingAmount)}

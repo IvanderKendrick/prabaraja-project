@@ -137,6 +137,10 @@ export function RequestsTable({
       onDelete?.(requestToDelete);
     }
     setDeleteDialogOpen(false);
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 5000);
   };
 
   const cancelDelete = () => {

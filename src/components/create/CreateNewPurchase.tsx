@@ -87,7 +87,7 @@ const CreateNewPurchase = () => {
           // Map items with full support (discount, coa, return, memo, etc.)
           const mappedItems = (formData.items || []).map((it: any) => {
             const itemData: any = {
-              coa: it.coa ?? it.coaAccountId ?? "", // nomor COA (atau ID COA)
+              coa: it.coaLabel ? it.coaLabel.split(" - ")[0] : "",
               item_name: it.name ?? it.item_name ?? "", // nama item
               sku: it.sku ?? "", // kode SKU
               qty: it.quantity ?? it.qty ?? 0, // jumlah
@@ -126,7 +126,8 @@ const CreateNewPurchase = () => {
           );
           apiFormData.append(
             "pph_percentage",
-            (formData.pphPercentage || 2).toString()
+            // (formData.pphPercentage || 2).toString()
+            formData.pphPercentage.toString()
           );
           apiFormData.append(
             "pph_type",
@@ -156,7 +157,11 @@ const CreateNewPurchase = () => {
           apiFormData.append("vendor_address", formData.vendorAddress || "");
           apiFormData.append("vendor_phone", formData.vendorPhone || "");
 
-          apiFormData.append("vendor_COA", formData.vendorCoaAccountId || "");
+          // apiFormData.append("vendor_COA", formData.vendorCoaAccountId || "");
+          apiFormData.append(
+            "vendor_COA",
+            formData.vendorCoaLabel?.split(" - ")[0] || ""
+          );
 
           apiFormData.append("terms", formData.terms || "");
           apiFormData.append("freight_in", formData.freightIn || "");
@@ -189,7 +194,7 @@ const CreateNewPurchase = () => {
 
           if (response.data && !response.data.error) {
             toast.success("Invoice created successfully");
-            navigate("/purchases");
+            navigate("/purchases/invoices");
             return;
           } else {
             throw new Error(
@@ -255,7 +260,7 @@ const CreateNewPurchase = () => {
 
           if (offerResponse.data && !offerResponse.data.error) {
             toast.success("Offer created successfully");
-            navigate("/purchases");
+            navigate("/purchases/offers");
             return;
           } else {
             throw new Error(
@@ -320,7 +325,7 @@ const CreateNewPurchase = () => {
 
           if (orderResponse.data && !orderResponse.data.error) {
             toast.success("Order created successfully");
-            navigate("/purchases");
+            navigate("/purchases/orders");
             return;
           } else {
             throw new Error(
@@ -412,10 +417,16 @@ const CreateNewPurchase = () => {
             "ppn_percentage",
             (formData.ppnPercentage || 11).toString()
           );
+          // apiFormData.append(
+          //   "pph_percentage",
+          //   (formData.pphPercentage || 2).toString()
+          // );
+
           apiFormData.append(
             "pph_percentage",
-            (formData.pphPercentage || 2).toString()
+            formData.pphPercentage.toString()
           );
+
           apiFormData.append(
             "pph_type",
             (formData.pphType
@@ -445,7 +456,7 @@ const CreateNewPurchase = () => {
 
           if (requestResponse.data && !requestResponse.data.error) {
             toast.success("Request created successfully");
-            navigate("/purchases");
+            navigate("/purchases/requests");
             return;
           } else {
             throw new Error(
@@ -544,8 +555,12 @@ const CreateNewPurchase = () => {
           );
           apiFormData.append(
             "pph_percentage",
-            (formData.pphPercentage || 2).toString()
+            formData.pphPercentage.toString()
           );
+          // apiFormData.append(
+          //   "pph_percentage",
+          //   (formData.pphPercentage || 2).toString()
+          // );
           apiFormData.append(
             "pph_type",
             (formData.pphType
@@ -576,7 +591,7 @@ const CreateNewPurchase = () => {
 
           if (shipmentResponse.data && !shipmentResponse.data.error) {
             toast.success("Shipment created successfully");
-            navigate("/purchases");
+            navigate("/purchases/shipments");
             return;
           } else {
             throw new Error(
@@ -637,10 +652,7 @@ const CreateNewPurchase = () => {
             "grand_total",
             (formData.grandTotal || 0).toString()
           );
-          apiFormData.append(
-            "total",
-            (formData.subtotalWithCosts || 0).toString()
-          );
+          apiFormData.append("total", (formData.grandTotal || 0).toString());
           apiFormData.append("memo", formData.memo || "");
 
           // Vendor information
@@ -658,6 +670,7 @@ const CreateNewPurchase = () => {
           apiFormData.append("number", formData.number);
 
           // Tax details
+          // NOTED!
           apiFormData.append(
             "tax_method",
             formData.taxCalculationMethod
@@ -673,8 +686,12 @@ const CreateNewPurchase = () => {
           );
           apiFormData.append(
             "pph_percentage",
-            (formData.pphPercentage || 2).toString()
+            formData.pphPercentage.toString()
           );
+          // apiFormData.append(
+          //   "pph_percentage",
+          //   (formData.pphPercentage || 2).toString()
+          // );
           apiFormData.append(
             "pph_type",
             (formData.pphType
@@ -700,7 +717,7 @@ const CreateNewPurchase = () => {
 
           if (quotationResponse.data && !quotationResponse.data.error) {
             toast.success("Quotation created successfully");
-            navigate("/purchases");
+            navigate("/purchases/quotations");
             return;
           } else {
             throw new Error(

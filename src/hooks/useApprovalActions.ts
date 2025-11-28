@@ -1,36 +1,38 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { toast } from 'sonner';
+import { useState } from "react";
+import axios from "axios";
+import { toast } from "sonner";
 
 // Action mapping for different approval types
 export const APPROVAL_ACTIONS = {
   QUOTATION: {
-    approve: 'sendQuotationToOffer',
-    reject: 'rejectQuotation'
+    approve: "sendQuotationToOffer",
+    reject: "rejectQuotation",
   },
   REQUEST: {
-    approve: 'sendRequestToOrder',
-    reject: 'rejectRequest'
+    approve: "sendRequestToOrder",
+    reject: "rejectRequest",
   },
   SHIPMENT: {
-    approve: 'sendShipmentToInvoice',
-    reject: 'rejectShipment'
+    approve: "sendShipment",
+    reject: "rejectShipment",
   },
   INVOICE: {
-    approve: 'sendInvoiceToCOA',
-    reject: 'rejectInvoice'
+    approve: "sendInvoiceToCOA",
+    reject: "rejectInvoice",
   },
   BILLING: {
-    approve: 'sendBillingToCOA',
-    reject: 'rejectBilling'
-  }
+    approve: "sendBillingToCOA",
+    reject: "rejectBilling",
+  },
 } as const;
 
 export type ApprovalType = keyof typeof APPROVAL_ACTIONS;
 
 // Get auth token helper function
 const getAuthToken = () => {
-  const authDataRaw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
+  const authDataRaw = localStorage.getItem(
+    "sb-xwfkrjtqcqmmpclioakd-auth-token"
+  );
   if (!authDataRaw) {
     throw new Error("No access token found in localStorage");
   }
@@ -50,17 +52,17 @@ export const useApprovalActions = (type: ApprovalType) => {
     try {
       setIsLoading(true);
       const token = getAuthToken();
-      
+
       const response = await axios.post(
-        'https://pbw-backend-api.vercel.app/api/purchases',
+        "https://pbw-backend-api.vercel.app/api/purchases",
         {
           action: APPROVAL_ACTIONS[type].approve,
-          id
+          id,
         },
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -69,12 +71,13 @@ export const useApprovalActions = (type: ApprovalType) => {
         toast.success("Approval successful");
         return true;
       } else {
-        throw new Error(response.data?.message || 'Failed to approve');
+        throw new Error(response.data?.message || "Failed to approve");
       }
     } catch (error) {
-      console.error('Error approving:', error);
+      console.error("Error approving:", error);
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to approve';
+        const errorMessage =
+          error.response?.data?.message || error.message || "Failed to approve";
         toast.error(errorMessage);
       } else {
         toast.error("Failed to approve. Please try again.");
@@ -89,17 +92,17 @@ export const useApprovalActions = (type: ApprovalType) => {
     try {
       setIsLoading(true);
       const token = getAuthToken();
-      
+
       const response = await axios.patch(
-        'https://pbw-backend-api.vercel.app/api/purchases',
+        "https://pbw-backend-api.vercel.app/api/purchases",
         {
           action: APPROVAL_ACTIONS[type].reject,
-          id
+          id,
         },
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -108,12 +111,13 @@ export const useApprovalActions = (type: ApprovalType) => {
         toast.success("Rejection successful");
         return true;
       } else {
-        throw new Error(response.data?.message || 'Failed to reject');
+        throw new Error(response.data?.message || "Failed to reject");
       }
     } catch (error) {
-      console.error('Error rejecting:', error);
+      console.error("Error rejecting:", error);
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to reject';
+        const errorMessage =
+          error.response?.data?.message || error.message || "Failed to reject";
         toast.error(errorMessage);
       } else {
         toast.error("Failed to reject. Please try again.");
@@ -127,6 +131,6 @@ export const useApprovalActions = (type: ApprovalType) => {
   return {
     handleApprove,
     handleReject,
-    isLoading
+    isLoading,
   };
 };

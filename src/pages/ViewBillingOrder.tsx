@@ -208,7 +208,10 @@ const ViewBillingOrder: React.FC = () => {
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>Rp {formatPriceWithSeparator(item.price)}</TableCell>
                       <TableCell>
-                        {item.disc_item} {item.disc_item_type === "percentage" ? "%" : "Rp"}
+                        {item.disc_item_type === "percentage"
+                          ? `${item.disc_item}%`
+                          : // show currency first: Rp 1.000
+                            `Rp ${formatPriceWithSeparator(item.disc_item)}`}
                       </TableCell>
                       <TableCell>Rp {formatPriceWithSeparator(item.total_per_item)}</TableCell>
                     </TableRow>

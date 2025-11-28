@@ -156,7 +156,7 @@ export function PurchaseInvoiceDetail() {
                     <Building2 className="h-5 w-5" /> Vendor Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="flex items-start justify-between gap-6 text-sm">
                   <div>
                     <Label className="text-gray-600">Vendor Name</Label>
                     <p className="font-medium">{invoice.vendor_name}</p>
@@ -195,10 +195,16 @@ export function PurchaseInvoiceDetail() {
                             Qty
                           </th>
                           <th className="text-right py-2 px-3 font-medium text-gray-600">
+                            COA
+                          </th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600">
                             Price
                           </th>
                           <th className="text-right py-2 px-3 font-medium text-gray-600">
                             Discount
+                          </th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600">
+                            Return
                           </th>
                           <th className="text-right py-2 px-3 font-medium text-gray-600">
                             Total
@@ -216,16 +222,34 @@ export function PurchaseInvoiceDetail() {
                                 : item.disc_item
                                 ? formatCurrency(item.disc_item)
                                 : "-";
-                            const total = qty * price;
+                            const total =
+                              // qty * price - item.return_unit * price;
+                              item.disc_item_type === "percentage"
+                                ? Math.round(
+                                    qty *
+                                      price *
+                                      (1 - (item.disc_item || 0) / 100)
+                                  ) -
+                                  (item.return_unit || 0) * price
+                                : Math.round(
+                                    qty * price - (item.disc_item || 0)
+                                  ) -
+                                  (item.return_unit || 0) * price;
                             return (
                               <tr key={i} className="border-b">
                                 <td className="py-3 px-3">{item.item_name}</td>
                                 <td className="py-3 px-3 text-right">{qty}</td>
                                 <td className="py-3 px-3 text-right">
+                                  {item.coa || "-"}
+                                </td>
+                                <td className="py-3 px-3 text-right">
                                   {formatCurrency(price)}
                                 </td>
                                 <td className="py-3 px-3 text-right">
                                   {discount}
+                                </td>
+                                <td className="py-3 px-3 text-right">
+                                  {item.return_unit}
                                 </td>
                                 <td className="py-3 px-3 text-right font-medium">
                                   {formatCurrency(total)}
@@ -282,40 +306,46 @@ export function PurchaseInvoiceDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
+                  {invoice && (
+                    <>
+                      {invoice.freight_in && (
+                        <div className="flex justify-between">
+                          <span>Freight In</span>
+                          <span>{formatCurrency(invoice.freight_in || 0)}</span>
+                        </div>
+                      )}
+                      {invoice.insurance && (
+                        <div className="flex justify-between">
+                          <span>Insurance</span>
+                          <span>{formatCurrency(invoice.insurance || 0)}</span>
+                        </div>
+                      )}
+                      {invoice.dpp && (
+                        <div className="flex justify-between">
+                          <span>DPP</span>
+                          <span>{formatCurrency(invoice.dpp || 0)}</span>
+                        </div>
+                      )}
+                      {invoice.ppn && (
+                        <div className="flex justify-between">
+                          <span>PPN</span>
+                          <span>{formatCurrency(invoice.ppn || 0)}</span>
+                        </div>
+                      )}
+                      {invoice && (
+                        <div className="flex justify-between">
+                          <span>PPH</span>
+                          <span>{formatCurrency(invoice.pph || 0)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span className="font-medium">
                       {formatCurrency(invoice.total)}
                     </span>
                   </div>
-                  {invoice.tax_details && (
-                    <>
-                      {invoice.tax_details.dpp && (
-                        <div className="flex justify-between">
-                          <span>DPP</span>
-                          <span>
-                            {formatCurrency(invoice.tax_details.dpp || 0)}
-                          </span>
-                        </div>
-                      )}
-                      {invoice.tax_details.ppn && (
-                        <div className="flex justify-between">
-                          <span>PPN</span>
-                          <span>
-                            {formatCurrency(invoice.tax_details.ppn || 0)}
-                          </span>
-                        </div>
-                      )}
-                      {invoice.tax_details.pph && (
-                        <div className="flex justify-between">
-                          <span>PPH</span>
-                          <span>
-                            {formatCurrency(invoice.tax_details.pph || 0)}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
                   <Separator />
                   <div className="flex justify-between text-base font-semibold">
                     <span>Grand Total</span>
@@ -334,11 +364,6 @@ export function PurchaseInvoiceDetail() {
                   <div className="flex justify-between">
                     <span>Vendor COA</span>
                     <span>{invoice.vendor_COA || "N/A"}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Terms</span>
-                    <span>{invoice.terms || "N/A"}</span>
                   </div>
                 </CardContent>
               </Card>

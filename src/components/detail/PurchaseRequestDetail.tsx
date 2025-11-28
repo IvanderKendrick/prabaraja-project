@@ -156,7 +156,7 @@ export function PurchaseRequestDetail() {
                     <Building2 className="h-5 w-5" /> Vendor Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="flex items-start justify-between gap-6 text-sm">
                   <div>
                     <Label className="text-gray-600">Vendor Name</Label>
                     <p className="font-medium">{request.vendor_name}</p>
@@ -288,30 +288,24 @@ export function PurchaseRequestDetail() {
                       {formatCurrency(request.total)}
                     </span>
                   </div>
-                  {request.tax_details && (
+                  {request && (
                     <>
-                      {request.tax_details.dpp && (
+                      {request.dpp && (
                         <div className="flex justify-between">
                           <span>DPP</span>
-                          <span>
-                            {formatCurrency(request.tax_details.dpp || 0)}
-                          </span>
+                          <span>{formatCurrency(request.dpp || 0)}</span>
                         </div>
                       )}
-                      {request.tax_details.ppn && (
+                      {request.ppn && (
                         <div className="flex justify-between">
                           <span>PPN</span>
-                          <span>
-                            {formatCurrency(request.tax_details.ppn || 0)}
-                          </span>
+                          <span>{formatCurrency(request.ppn || 0)}</span>
                         </div>
                       )}
-                      {request.tax_details.pph && (
+                      {request && (
                         <div className="flex justify-between">
                           <span>PPH</span>
-                          <span>
-                            {formatCurrency(request.tax_details.pph || 0)}
-                          </span>
+                          <span>{formatCurrency(request.pph || 0)}</span>
                         </div>
                       )}
                     </>
