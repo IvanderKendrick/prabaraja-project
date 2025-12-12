@@ -5,6 +5,7 @@ import { useState } from "react";
 import ManufactureContent from "./ManufactureContent";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Manufacture = () => {
   const navigate = useNavigate();
@@ -19,12 +20,44 @@ const Manufacture = () => {
   const headerTitle = `Manufacture – ${toTitleCase(activeTab)}`;
   const headerDescription = `Manage ${toTitleCase(activeTab)} records`;
 
+  // Dummy summary values
+  const totalBOM = 3;
+  const totalWIP = 3;
+
   return (
     <div className="flex h-screen w-full">
       <Sidebar />
 
       <div className="flex-1 overflow-auto">
         <Header title={headerTitle} description={headerDescription} />
+
+        {/* -------------------------- NEW SECTION: SUMMARY CARDS -------------------------- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 mt-4">
+          {/* Card 1: Total BOM */}
+          <Card className="border shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-medium text-gray-600">
+                Total Bill of Material
+              </p>
+              <p className="text-3xl font-bold text-green-700 mt-1">
+                {totalBOM}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Total WIP */}
+          <Card className="border shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-medium text-gray-600">
+                Total Work In Process (Unfinished)
+              </p>
+              <p className="text-3xl font-bold text-green-700 mt-1">
+                {totalWIP}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        {/* ------------------------------------------------------------------------------ */}
 
         <div className="p-6 space-y-5">
           {/* TOP BAR */}

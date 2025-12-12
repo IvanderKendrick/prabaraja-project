@@ -3,19 +3,11 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-import { Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import RoutingProcessCard from "./RoutingProcessCard";
 
-export default function AddNewBom() {
+import RoutingProcessCard from "../BoM/RoutingProcessCard";
+
+export default function EditWorkInProcess() {
   const handleRoutingChange = (id, updatedData) => {
     setRoutingProcesses((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updatedData } : p))
@@ -46,34 +38,6 @@ export default function AddNewBom() {
       totalOfc: 0,
     },
   ]);
-
-  const handleAddProcess = () => {
-    setRoutingProcesses((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        processName: "",
-        jobDesc: "",
-
-        items: [],
-        laborItems: [],
-        indirectMaterialItems: [],
-        indirectLaborItems: [],
-        overheadItems: [],
-        deprItems: [],
-        utilitiesItems: [],
-        ofcItems: [],
-
-        totalMaterial: 0,
-        totalLabor: 0,
-        totalIndirectMaterial: 0,
-        totalIndirectLabor: 0,
-        totalDepreciation: 0,
-        totalUtilities: 0,
-        totalOfc: 0,
-      },
-    ]);
-  };
 
   const handleDeleteProcess = (id) => {
     setRoutingProcesses((prev) => prev.filter((p) => p.id !== id));
@@ -116,14 +80,21 @@ export default function AddNewBom() {
   const cogmPerUnit = goodsProducedQty > 0 ? totalCOGM / goodsProducedQty : 0;
   // HITUNGAN GENERAL END
 
+  const [productionCode, setProductionCode] = useState("");
+  const [jobOrderNumber, setJobOrderNumber] = useState("");
+  const [totalProductionOrder, setTotalProductionOrder] = useState(0);
+  const [warehouse, setWarehouse] = useState("");
+  const [scheduleStart, setScheduleStart] = useState("");
+  const [scheduleFinish, setScheduleFinish] = useState("");
+
   return (
     <div className="flex h-screen w-full">
       <Sidebar />
 
       <div className="flex-1 overflow-auto">
         <Header
-          title="Add New Bill of Material"
-          description="Create a new Bill of Material for manufacturing process"
+          title="Edit Production Plan"
+          description="Edit an existing Production Plan for manufacturing process"
         />
 
         <div className="p-6 space-y-8">
@@ -135,62 +106,122 @@ export default function AddNewBom() {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* NAME (Disabled) */}
                 <div>
                   <p className="font-medium mb-1">Name</p>
-                  <Input placeholder="Name" />
+                  <Input placeholder="Name" disabled />
                 </div>
 
+                {/* PRODUCTION CODE (Editable) */}
+                <div>
+                  <p className="font-medium mb-1">Production Code</p>
+                  <Input
+                    value={productionCode}
+                    onChange={(e) => setProductionCode(e.target.value)}
+                    disabled
+                    placeholder="Production Code"
+                  />
+                </div>
+
+                {/* JOB ORDER NUMBER (Editable) */}
+                <div>
+                  <p className="font-medium mb-1">Job Order Number</p>
+                  <Input
+                    value={jobOrderNumber}
+                    onChange={(e) => setJobOrderNumber(e.target.value)}
+                    disabled
+                    placeholder="Job Order Number"
+                  />
+                </div>
+
+                {/* SKU (Disabled) */}
                 <div>
                   <p className="font-medium mb-1">SKU</p>
-                  <Input placeholder="SKU" />
+                  <Input placeholder="SKU" disabled />
                 </div>
 
+                {/* TOTAL PRODUCTION ORDER (Editable) */}
                 <div>
-                  <p className="font-medium mb-1">
-                    Quantity of Goods Produced - Estimated
-                  </p>
-
+                  <p className="font-medium mb-1">Total Production Order</p>
                   <Input
                     type="number"
-                    value={goodsProducedQty}
+                    value={totalProductionOrder}
                     onChange={(e) =>
-                      setGoodsProducedQty(Number(e.target.value))
+                      setTotalProductionOrder(Number(e.target.value))
                     }
+                    disabled
                     placeholder="0"
                   />
                 </div>
 
+                {/* QTY GOODS PRODUCED - ESTIMATED (Disabled) */}
+                <div>
+                  <p className="font-medium mb-1">
+                    Quantity of Goods Produced - Estimated
+                  </p>
+                  <Input
+                    type="number"
+                    value={goodsProducedQty}
+                    disabled
+                    placeholder="0"
+                  />
+                </div>
+
+                {/* TOTAL QTY GOODS PRODUCED - ESTIMATED (RUMUS, Disabled) */}
+                <div>
+                  <p className="font-medium mb-1">
+                    Total Quantity of Goods Produced - Estimated
+                  </p>
+
+                  <Input
+                    type="number"
+                    value={totalProductionOrder * goodsProducedQty || 0}
+                    disabled
+                  />
+                </div>
+
+                {/* CATEGORY (Disabled) */}
                 <div>
                   <p className="font-medium mb-1">Category</p>
-                  <Input placeholder="Category" />
+                  <Input placeholder="Category" disabled />
                 </div>
 
+                {/* WAREHOUSE (Editable) */}
                 <div>
-                  <p className="font-medium mb-1">Estimated Completion Time</p>
-                  <Input type="number" placeholder="0" />
+                  <p className="font-medium mb-1">Warehouse</p>
+                  <Input
+                    value={warehouse}
+                    onChange={(e) => setWarehouse(e.target.value)}
+                    disabled
+                    placeholder="Warehouse"
+                  />
                 </div>
 
+                {/* SCHEDULE START */}
                 <div>
-                  <p className="font-medium mb-1">Set as Job Order Product</p>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <p className="font-medium mb-1">Schedule – Start</p>
+                  <Input
+                    type="date"
+                    value={scheduleStart}
+                    onChange={(e) => setScheduleStart(e.target.value)}
+                    disabled
+                  />
+                </div>
+
+                {/* SCHEDULE FINISH */}
+                <div>
+                  <p className="font-medium mb-1">Schedule – Finish</p>
+                  <Input
+                    type="date"
+                    value={scheduleFinish}
+                    onChange={(e) => setScheduleFinish(e.target.value)}
+                    disabled
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Button
-            className="bg-sidebar-active hover:bg-green-600 text-white"
-            onClick={handleAddProcess}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Process
-          </Button>
+
           {/* ROUTING PROCESS */}
           {routingProcesses.map((proc, index) => (
             <RoutingProcessCard
@@ -230,6 +261,7 @@ export default function AddNewBom() {
               </span>
             </div>
           </div>
+
           {/* SAVE BUTTON */}
           <div className="flex justify-end">
             <Button className="bg-sidebar-active hover:bg-green-600 text-white px-6">

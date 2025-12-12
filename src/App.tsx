@@ -75,6 +75,8 @@ import ProductDetail from "./pages/Inventory/Product/ProductDetail";
 import AddNewProduct from "./pages/Inventory/Product/AddNewProduct";
 import Manufacture from "./pages/Manufacture/Manufacture";
 import AddNewBom from "./pages/Manufacture/BoM/AddNewBom";
+import EditProductionPlan from "./pages/Manufacture/PP/EditProductionPlan";
+import EditWorkInProcess from "./pages/Manufacture/WiP/EditWorkInProcess";
 
 const queryClient = new QueryClient();
 
@@ -169,6 +171,24 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AddNewBom />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/editproductionplan"
+                element={
+                  <ProtectedRoute>
+                    <EditProductionPlan />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/editworkinprocess"
+                element={
+                  <ProtectedRoute>
+                    <EditWorkInProcess />
                   </ProtectedRoute>
                 }
               />

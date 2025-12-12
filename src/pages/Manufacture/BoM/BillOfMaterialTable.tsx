@@ -19,17 +19,17 @@ import { MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
 const dummyBOM = [
   {
     id: "1",
-    name: "BOM – Steel Cabinet",
+    name: "BOM - Steel Cabinet",
     status: true,
   },
   {
     id: "2",
-    name: "BOM – Aluminium Frame",
+    name: "BOM - Aluminium Frame",
     status: false,
   },
   {
     id: "3",
-    name: "BOM – Motor Assembly",
+    name: "BOM - Motor Assembly",
     status: true,
   },
 ];
