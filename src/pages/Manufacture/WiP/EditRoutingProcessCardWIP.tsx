@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableHeader,
@@ -10,8 +8,8 @@ import {
   TableCell,
   TableBody,
 } from "@/components/ui/table";
-import { Plus, Trash } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface DirectMaterialItem {
   id: number;
@@ -43,7 +41,7 @@ type LaborItem = {
   rateEstimated: number;
 };
 
-export default function RoutingProcessCard({
+export default function EditRoutingProcessCardWIP({
   index,
   data,
   onChange,
@@ -488,7 +486,9 @@ export default function RoutingProcessCard({
   }, [indirectLaborItems]);
 
   // const [overheadItems, setOverheadItems] = useState([]);
-  const [overheadItems, setOverheadItems] = useState(data.overheadItems || []);
+  const [overheadItems, setOverheadItems] = useState(
+    data.indirectMaterialItems || []
+  );
 
   const handleAddOverheadItem = () => {
     setOverheadItems((prev) => [
@@ -565,6 +565,9 @@ export default function RoutingProcessCard({
   const [laborItems, setLaborItems] = useState<LaborItem[]>(
     data.laborItems || []
   );
+  const [laborItemsOri, setLaborItemsOri] = useState<LaborItem[]>(
+    data.laborItems || []
+  );
 
   const handleAddLaborItem = () => {
     setLaborItems((prev) => [
@@ -607,19 +610,17 @@ export default function RoutingProcessCard({
         updated.rateDay = workingDay > 0 ? rateMonth / workingDay : 0;
 
         // --- RATE/HOURS ---
-        updated.rateHours =
-          workingHours > 0 ? updated.rateDay / workingHours : 0;
+        // updated.rateHours =
+        //   workingHours > 0 ? updated.rateDay / workingHours : 0;
 
         // --- ORDER COMPLETION (IN DAYS) ---
         updated.orderCompletionDays =
           workingHours > 0 ? orderCompletion / workingHours : 0;
 
         // --- RATE ESTIMATED ---
-        const valid = workingDay > 0 && workingHours > 0 && orderCompletion > 0;
+        // const valid = workingDay > 0 && workingHours > 0 && orderCompletion > 0;
 
-        updated.rateEstimated = valid
-          ? qty * updated.rateHours * orderCompletion
-          : qty * rateMonth;
+        updated.rateEstimated = qty * updated.rateHours * orderCompletion;
 
         return updated;
       });
@@ -671,6 +672,9 @@ export default function RoutingProcessCard({
 
   // const [items, setItems] = useState<DirectMaterialItem[]>([]);
   const [items, setItems] = useState<DirectMaterialItem[]>(data.items || []);
+  const [itemsOri, setItemsOri] = useState<DirectMaterialItem[]>(
+    data.items || []
+  );
   // const [items, setItems] = useState<DirectMaterialItem[]>([
   //   {
   //     id: 1,
@@ -725,6 +729,10 @@ export default function RoutingProcessCard({
   };
 
   const totalCost = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const totalCostOri = itemsOri.reduce(
+    (sum, item) => sum + item.qty * item.price,
+    0
+  );
 
   const handleDeleteItem = (id) => {
     setItems((prev) => {
@@ -756,36 +764,28 @@ export default function RoutingProcessCard({
           <div>
             <p className="font-medium mb-1">Process {index + 1} Name</p>
             <Input
+              disabled
               value={data.processName}
               placeholder="Process name"
-              onChange={(e) => onChange({ processName: e.target.value })}
             />
           </div>
 
           <div>
             <p className="font-medium mb-1">Job Desc</p>
             <Input
+              disabled
               value={data.jobDesc}
               placeholder="Job description"
-              onChange={(e) => onChange({ jobDesc: e.target.value })}
             />
           </div>
         </div>
 
-        {/* DIRECT MATERIAL SECTION */}
+        {/* DIRECT MATERIAL SECTION VIEW */}
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
               DIRECT MATERIAL
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
           </div>
 
           <div className="rounded-md border">
@@ -800,7 +800,126 @@ export default function RoutingProcessCard({
                   <TableHead>Unit</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Total</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {itemsOri.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{index + 1}</TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.coa}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "coa", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.name}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "name", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.desc}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "desc", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        type="number"
+                        value={item.qty}
+                        onChange={(e) =>
+                          handleItemChange(
+                            item.id,
+                            "qty",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.unit}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "unit", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        type="number"
+                        value={item.price}
+                        onChange={(e) =>
+                          handleItemChange(
+                            item.id,
+                            "price",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      Rp {(item.qty * item.price).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* TOTAL SECTION */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Direct Material Cost-Estimated:
+              </p>
+              <p className="text-xl font-bold text-green-700">
+                Rp {totalCostOri.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* DIRECT MATERIAL SECTION */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">
+              DIRECT MATERIAL
+            </h2>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>No</TableHead>
+                  <TableHead>COA</TableHead>
+                  <TableHead>Item Name</TableHead>
+                  <TableHead>Desc</TableHead>
+                  <TableHead>QTY</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Total</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -811,6 +930,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.coa}
                         onChange={(e) =>
                           handleItemChange(item.id, "coa", e.target.value)
@@ -820,6 +940,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.name}
                         onChange={(e) =>
                           handleItemChange(item.id, "name", e.target.value)
@@ -829,6 +950,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.desc}
                         onChange={(e) =>
                           handleItemChange(item.id, "desc", e.target.value)
@@ -852,6 +974,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.unit}
                         onChange={(e) =>
                           handleItemChange(item.id, "unit", e.target.value)
@@ -876,15 +999,6 @@ export default function RoutingProcessCard({
                     <TableCell>
                       Rp {(item.qty * item.price).toLocaleString()}
                     </TableCell>
-
-                    <TableCell className="text-center">
-                      <button
-                        className="text-red-600 hover:text-red-800"
-                        onClick={() => handleDeleteItem(item.id)}
-                      >
-                        <Trash className="w-5 h-5" />
-                      </button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -895,10 +1009,210 @@ export default function RoutingProcessCard({
           <div className="flex justify-end pt-4">
             <div className="text-right">
               <p className="font-semibold text-gray-700">
-                Total Direct Material Cost-Estimated:
+                Total Direct Material Cost-Actual:
               </p>
               <p className="text-xl font-bold text-green-700">
                 Rp {totalCost.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* DIRECT LABOR COST VIEW */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">
+              DIRECT LABOR COST
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            {laborItemsOri.map((item, index) => (
+              <div
+                key={item.id}
+                className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
+              >
+                {/* HEADER + DELETE */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Item #{index + 1}
+                  </h3>
+                </div>
+
+                {/* --------------------- BARIS 1 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">COA</label>
+                    <Input
+                      disabled
+                      value={item.coa}
+                      onChange={(e) =>
+                        handleLaborChange(item.id, "coa", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Item Name</label>
+                    <Input
+                      disabled
+                      value={item.name}
+                      onChange={(e) =>
+                        handleLaborChange(item.id, "name", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Desc</label>
+                    <Input
+                      disabled
+                      value={item.desc}
+                      onChange={(e) =>
+                        handleLaborChange(item.id, "desc", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">QTY</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.qty}
+                      onChange={(e) =>
+                        handleLaborChange(
+                          item.id,
+                          "qty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Unit</label>
+                    <Input
+                      disabled
+                      value={item.unit}
+                      onChange={(e) =>
+                        handleLaborChange(item.id, "unit", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Rate/Month or Total
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.rateMonth}
+                      onChange={(e) =>
+                        handleLaborChange(
+                          item.id,
+                          "rateMonth",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 2 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Working Day/Month
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.workingDay}
+                      onChange={(e) =>
+                        handleLaborChange(
+                          item.id,
+                          "workingDay",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Working Hours/Day
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.workingHours}
+                      onChange={(e) =>
+                        handleLaborChange(
+                          item.id,
+                          "workingHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Rate/Day</label>
+                    <p className="font-semibold">
+                      Rp {(item.rateDay ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Rate/Hours</label>
+                    <p className="font-semibold">
+                      Rp {(item.rateHours ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 3 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Order Completion Time (Hours)
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.orderCompletion}
+                      onChange={(e) =>
+                        handleLaborChange(
+                          item.id,
+                          "orderCompletion",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 4 --------------------- */}
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium">Rate-Estimated</p>
+                  <p className="text-xl font-bold text-green-600">
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* TOTAL */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Direct Labor Cost-Estimated:
+              </p>
+              <p className="text-xl font-bold text-green-700">
+                Rp {laborTotal.toLocaleString()}
               </p>
             </div>
           </div>
@@ -910,14 +1224,6 @@ export default function RoutingProcessCard({
             <h2 className="text-lg font-semibold text-gray-800">
               DIRECT LABOR COST
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddLaborItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Labor
-            </Button>
           </div>
 
           <div className="space-y-6">
@@ -931,13 +1237,6 @@ export default function RoutingProcessCard({
                   <h3 className="text-lg font-semibold text-gray-800">
                     Item #{index + 1}
                   </h3>
-
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => handleDeleteLaborItem(item.id)}
-                  >
-                    <Trash className="w-5 h-5" />
-                  </button>
                 </div>
 
                 {/* --------------------- BARIS 1 --------------------- */}
@@ -945,6 +1244,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">COA</label>
                     <Input
+                      disabled
                       value={item.coa}
                       onChange={(e) =>
                         handleLaborChange(item.id, "coa", e.target.value)
@@ -955,6 +1255,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Item Name</label>
                     <Input
+                      disabled
                       value={item.name}
                       onChange={(e) =>
                         handleLaborChange(item.id, "name", e.target.value)
@@ -965,6 +1266,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Desc</label>
                     <Input
+                      disabled
                       value={item.desc}
                       onChange={(e) =>
                         handleLaborChange(item.id, "desc", e.target.value)
@@ -990,6 +1292,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Unit</label>
                     <Input
+                      disabled
                       value={item.unit}
                       onChange={(e) =>
                         handleLaborChange(item.id, "unit", e.target.value)
@@ -1002,6 +1305,7 @@ export default function RoutingProcessCard({
                       Rate/Month or Total
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.rateMonth}
                       onChange={(e) =>
@@ -1022,6 +1326,7 @@ export default function RoutingProcessCard({
                       Working Day/Month
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.workingDay}
                       onChange={(e) =>
@@ -1039,6 +1344,7 @@ export default function RoutingProcessCard({
                       Working Hours/Day
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.workingHours}
                       onChange={(e) =>
@@ -1054,15 +1360,26 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Rate/Day</label>
                     <p className="font-semibold">
-                      Rp {item.rateDay.toLocaleString()}
+                      Rp {(item.rateDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
                   <div>
                     <label className="text-sm font-medium">Rate/Hours</label>
-                    <p className="font-semibold">
-                      Rp {item.rateHours.toLocaleString()}
-                    </p>
+                    {/* <p className="font-semibold">
+                      Rp {(item.rateHours ?? 0).toLocaleString()}
+                    </p> */}
+                    <Input
+                      type="number"
+                      value={item.rateHours}
+                      onChange={(e) =>
+                        handleLaborChange(
+                          item.id,
+                          "rateHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
                   </div>
                 </div>
 
@@ -1090,7 +1407,7 @@ export default function RoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1119,14 +1436,6 @@ export default function RoutingProcessCard({
             <h2 className="text-lg font-semibold uppercase text-gray-800">
               Indirect Material
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddOverheadItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
           </div>
 
           <div className="rounded-md border overflow-x-auto">
@@ -1141,7 +1450,6 @@ export default function RoutingProcessCard({
                   <TableHead>Unit</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Total</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -1152,6 +1460,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.coa}
                         onChange={(e) =>
                           handleOverheadChange(item.id, "coa", e.target.value)
@@ -1161,6 +1470,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.name}
                         onChange={(e) =>
                           handleOverheadChange(item.id, "name", e.target.value)
@@ -1170,6 +1480,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.desc}
                         onChange={(e) =>
                           handleOverheadChange(item.id, "desc", e.target.value)
@@ -1179,6 +1490,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         type="number"
                         value={item.qty}
                         onChange={(e) =>
@@ -1193,6 +1505,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         value={item.unit}
                         onChange={(e) =>
                           handleOverheadChange(item.id, "unit", e.target.value)
@@ -1202,6 +1515,7 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       <Input
+                        disabled
                         type="number"
                         value={item.price}
                         onChange={(e) =>
@@ -1216,15 +1530,6 @@ export default function RoutingProcessCard({
 
                     <TableCell>
                       Rp {(item.qty * item.price).toLocaleString()}
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <button
-                        className="text-red-600 hover:text-red-800"
-                        onClick={() => handleDeleteOverheadItem(item.id)}
-                      >
-                        <Trash className="w-5 h-5" />
-                      </button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1251,14 +1556,6 @@ export default function RoutingProcessCard({
             <h2 className="text-lg font-semibold text-gray-800">
               INDIRECT LABOR COST
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddIndirectLaborItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Indirect Labor
-            </Button>
           </div>
 
           <div className="space-y-6">
@@ -1272,13 +1569,6 @@ export default function RoutingProcessCard({
                   <h3 className="text-lg font-semibold text-gray-800">
                     Indirect Item #{index + 1}
                   </h3>
-
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => handleDeleteIndirectLaborItem(item.id)}
-                  >
-                    <Trash className="w-5 h-5" />
-                  </button>
                 </div>
 
                 {/* --------------------- BARIS 1 --------------------- */}
@@ -1286,6 +1576,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">COA</label>
                     <Input
+                      disabled
                       value={item.coa}
                       onChange={(e) =>
                         handleIndirectLaborChange(
@@ -1300,6 +1591,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Item Name</label>
                     <Input
+                      disabled
                       value={item.name}
                       onChange={(e) =>
                         handleIndirectLaborChange(
@@ -1314,6 +1606,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Desc</label>
                     <Input
+                      disabled
                       value={item.desc}
                       onChange={(e) =>
                         handleIndirectLaborChange(
@@ -1328,6 +1621,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">QTY</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.qty}
                       onChange={(e) =>
@@ -1343,6 +1637,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Unit</label>
                     <Input
+                      disabled
                       value={item.unit}
                       onChange={(e) =>
                         handleIndirectLaborChange(
@@ -1359,6 +1654,7 @@ export default function RoutingProcessCard({
                       Rate/Month or Total
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.rateMonth}
                       onChange={(e) =>
@@ -1379,6 +1675,7 @@ export default function RoutingProcessCard({
                       Working Day/Month
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.workingDay}
                       onChange={(e) =>
@@ -1396,6 +1693,7 @@ export default function RoutingProcessCard({
                       Working Hours/Day
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.workingHours}
                       onChange={(e) =>
@@ -1411,14 +1709,14 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Rate/Day</label>
                     <p className="font-semibold">
-                      Rp {item.rateDay.toLocaleString()}
+                      Rp {(item.rateDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
                   <div>
                     <label className="text-sm font-medium">Rate/Hours</label>
                     <p className="font-semibold">
-                      Rp {item.rateHours.toLocaleString()}
+                      Rp {(item.rateHours ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1430,6 +1728,7 @@ export default function RoutingProcessCard({
                       Order Completion Time (Hours)
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.orderCompletion}
                       onChange={(e) =>
@@ -1447,7 +1746,7 @@ export default function RoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1473,14 +1772,6 @@ export default function RoutingProcessCard({
             <h2 className="text-lg font-semibold text-gray-800">
               Factory Plant / Machine / Equipment Depreciation
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddDepreciationItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Equipment
-            </Button>
           </div>
 
           <div className="space-y-6">
@@ -1494,13 +1785,6 @@ export default function RoutingProcessCard({
                   <h3 className="text-lg font-semibold text-gray-800">
                     Equipment #{index + 1}
                   </h3>
-
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => handleDeleteDepreciationItem(item.id)}
-                  >
-                    <Trash className="w-5 h-5" />
-                  </button>
                 </div>
 
                 {/* --------------------- BARIS 1 --------------------- */}
@@ -1508,6 +1792,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">COA</label>
                     <Input
+                      disabled
                       value={item.coa}
                       onChange={(e) =>
                         handleDepreciationChange(item.id, "coa", e.target.value)
@@ -1518,6 +1803,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Item Name</label>
                     <Input
+                      disabled
                       value={item.name}
                       onChange={(e) =>
                         handleDepreciationChange(
@@ -1532,6 +1818,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Desc</label>
                     <Input
+                      disabled
                       value={item.desc}
                       onChange={(e) =>
                         handleDepreciationChange(
@@ -1546,6 +1833,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">QTY</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.qty}
                       onChange={(e) =>
@@ -1561,6 +1849,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Unit</label>
                     <Input
+                      disabled
                       value={item.unit}
                       onChange={(e) =>
                         handleDepreciationChange(
@@ -1575,6 +1864,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Price</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.price}
                       onChange={(e) =>
@@ -1590,6 +1880,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Acc. Dep.</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.accDep}
                       onChange={(e) =>
@@ -1607,7 +1898,7 @@ export default function RoutingProcessCard({
                 <div className="pt-2">
                   <label className="text-sm font-medium">Book Value</label>
                   <p className="text-lg font-bold">
-                    Rp {item.bookValue.toLocaleString()}
+                    Rp {(item.bookValue ?? 0).toLocaleString()}
                   </p>
                 </div>
 
@@ -1618,6 +1909,7 @@ export default function RoutingProcessCard({
                       Estimated Useful Life (Year)
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.usefulLife}
                       onChange={(e) =>
@@ -1635,6 +1927,7 @@ export default function RoutingProcessCard({
                       Operating Day/Month
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.operatingDay}
                       onChange={(e) =>
@@ -1652,6 +1945,7 @@ export default function RoutingProcessCard({
                       Operating Hours/Day
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.operatingHours}
                       onChange={(e) =>
@@ -1667,6 +1961,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Salvage Value</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.salvage}
                       onChange={(e) =>
@@ -1684,7 +1979,7 @@ export default function RoutingProcessCard({
                       Total Useful Life (Hours)
                     </label>
                     <p className="font-semibold">
-                      {item.usefulLifeTotalHours.toLocaleString()}
+                      {(item.usefulLifeTotalHours ?? 0).toLocaleString()}
                     </p>
                   </div>
 
@@ -1693,7 +1988,7 @@ export default function RoutingProcessCard({
                       Depreciation / Hours
                     </label>
                     <p className="font-semibold">
-                      Rp {item.depreciationPerHour.toLocaleString()}
+                      Rp {(item.depreciationPerHour ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1705,6 +2000,7 @@ export default function RoutingProcessCard({
                       Order Completion Time (Hours)
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.orderCompletion}
                       onChange={(e) =>
@@ -1722,7 +2018,7 @@ export default function RoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1748,14 +2044,6 @@ export default function RoutingProcessCard({
             <h2 className="text-lg font-semibold text-gray-800">
               Utilities Cost
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddUtilitiesItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Utility
-            </Button>
           </div>
 
           <div className="space-y-6">
@@ -1769,13 +2057,6 @@ export default function RoutingProcessCard({
                   <h3 className="text-lg font-semibold text-gray-800">
                     Utility #{index + 1}
                   </h3>
-
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => handleDeleteUtilitiesItem(item.id)}
-                  >
-                    <Trash className="w-5 h-5" />
-                  </button>
                 </div>
 
                 {/* --------------------- ROW 1 --------------------- */}
@@ -1783,6 +2064,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">COA</label>
                     <Input
+                      disabled
                       value={item.coa}
                       onChange={(e) =>
                         handleUtilitiesChange(item.id, "coa", e.target.value)
@@ -1793,6 +2075,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Item Name</label>
                     <Input
+                      disabled
                       value={item.name}
                       onChange={(e) =>
                         handleUtilitiesChange(item.id, "name", e.target.value)
@@ -1803,6 +2086,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Desc</label>
                     <Input
+                      disabled
                       value={item.desc}
                       onChange={(e) =>
                         handleUtilitiesChange(item.id, "desc", e.target.value)
@@ -1813,6 +2097,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">QTY</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.qty}
                       onChange={(e) =>
@@ -1828,6 +2113,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Unit</label>
                     <Input
+                      disabled
                       value={item.unit}
                       onChange={(e) =>
                         handleUtilitiesChange(item.id, "unit", e.target.value)
@@ -1838,6 +2124,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Price</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.price}
                       onChange={(e) =>
@@ -1863,6 +2150,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Operating Day</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.operatingDay}
                       onChange={(e) =>
@@ -1880,6 +2168,7 @@ export default function RoutingProcessCard({
                       Operating Hours/Day
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.operatingHours}
                       onChange={(e) =>
@@ -1897,7 +2186,7 @@ export default function RoutingProcessCard({
                       Estimated Utility Rate / Day
                     </label>
                     <p className="font-semibold">
-                      Rp {item.ratePerDay.toLocaleString()}
+                      Rp {(item.ratePerDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
@@ -1906,7 +2195,7 @@ export default function RoutingProcessCard({
                       Estimated Utility Rate / Hours
                     </label>
                     <p className="font-semibold">
-                      Rp {item.ratePerHour.toLocaleString()}
+                      Rp {(item.ratePerHour ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1918,6 +2207,7 @@ export default function RoutingProcessCard({
                       Order Completion Time (Hours)
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.orderCompletion}
                       onChange={(e) =>
@@ -1933,7 +2223,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Estimated QTY</label>
                     <p className="font-semibold">
-                      {item.estimatedQty.toLocaleString()} {item.unit}
+                      {(item.estimatedQty ?? 0).toLocaleString()} {item.unit}
                     </p>
                   </div>
                 </div>
@@ -1942,7 +2232,7 @@ export default function RoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1968,14 +2258,6 @@ export default function RoutingProcessCard({
             <h2 className="text-lg font-semibold text-gray-800">
               Other Factory Overhead Cost
             </h2>
-
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={handleAddOfcItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Overhead
-            </Button>
           </div>
 
           <div className="space-y-6">
@@ -1989,13 +2271,6 @@ export default function RoutingProcessCard({
                   <h3 className="text-lg font-semibold text-gray-800">
                     Overhead #{index + 1}
                   </h3>
-
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => handleDeleteOfcItem(item.id)}
-                  >
-                    <Trash className="w-5 h-5" />
-                  </button>
                 </div>
 
                 {/* --------------------- ROW 1 --------------------- */}
@@ -2003,6 +2278,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">COA</label>
                     <Input
+                      disabled
                       value={item.ofcCoa}
                       onChange={(e) =>
                         handleOfcChange(item.id, "ofcCoa", e.target.value)
@@ -2013,6 +2289,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Item Name</label>
                     <Input
+                      disabled
                       value={item.ofcName}
                       onChange={(e) =>
                         handleOfcChange(item.id, "ofcName", e.target.value)
@@ -2023,6 +2300,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Desc</label>
                     <Input
+                      disabled
                       value={item.ofcDesc}
                       onChange={(e) =>
                         handleOfcChange(item.id, "ofcDesc", e.target.value)
@@ -2033,6 +2311,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">QTY</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.ofcQty}
                       onChange={(e) =>
@@ -2048,6 +2327,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Unit</label>
                     <Input
+                      disabled
                       value={item.ofcUnit}
                       onChange={(e) =>
                         handleOfcChange(item.id, "ofcUnit", e.target.value)
@@ -2058,6 +2338,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Price</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.ofcPrice}
                       onChange={(e) =>
@@ -2083,6 +2364,7 @@ export default function RoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Operating Day</label>
                     <Input
+                      disabled
                       type="number"
                       value={item.ofcOperatingDay}
                       onChange={(e) =>
@@ -2100,6 +2382,7 @@ export default function RoutingProcessCard({
                       Operating Hours/Day
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.ofcOperatingHours}
                       onChange={(e) =>
@@ -2138,6 +2421,7 @@ export default function RoutingProcessCard({
                       Order Completion Time (Hours)
                     </label>
                     <Input
+                      disabled
                       type="number"
                       value={item.ofcOrderTime}
                       onChange={(e) =>
@@ -2182,9 +2466,6 @@ export default function RoutingProcessCard({
             </div>
           </div>
         </div>
-        <button className="text-red-600 hover:text-red-800" onClick={onDelete}>
-          <Trash className="w-5 h-5" />
-        </button>
       </CardContent>
     </Card>
   );

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+
 import {
   MoreHorizontal,
   Eye,
@@ -6,6 +8,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,57 +19,92 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
+
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 
-// Dummy data
-const dummyStocks = [
-  {
-    id: "1",
-    name: "Steel Bar 12mm",
-    category: "Raw Material",
-    unit: "pcs",
-    quantity: 500,
-    cogs: 25000,
-  },
-  {
-    id: "2",
-    name: "Aluminium Sheet",
-    category: "Raw Material",
-    unit: "sheet",
-    quantity: 200,
-    cogs: 40000,
-  },
-  {
-    id: "3",
-    name: "Bolt M10",
-    category: "Fastener",
-    unit: "box",
-    quantity: 100,
-    cogs: 150000,
-  },
-];
+// ======================================================
+// GET TOKEN FROM LOCAL STORAGE
+// ======================================================
+const getAuthToken = () => {
+  const raw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
+  if (!raw) throw new Error("No token found");
+
+  const parsed = JSON.parse(raw);
+  if (!parsed.access_token) throw new Error("Token missing");
+
+  return parsed.access_token;
+};
 
 export default function StockTable() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const totalQuantity = dummyStocks.reduce((sum, s) => sum + s.quantity, 0);
-  const totalStockValue = dummyStocks.reduce(
+  const [stocks, setStocks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // ======================================================
+  // FETCH STOCK DATA
+  // ======================================================
+  const fetchStocks = async () => {
+    try {
+      const token = getAuthToken();
+
+      const response = await axios.get(
+        "https://pbw-backend-api.vercel.app/api/products?action=getStocks",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const apiData = response.data.formattedData ?? [];
+
+      // MAP API → TABLE FORMAT
+      const mapped = apiData.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category ?? "-",
+        unit: item.unit ?? "-",
+        quantity: item.current_stock ?? 0,
+        cogs: item.minimum_stock ?? 0, // as requested
+      }));
+
+      setStocks(mapped);
+      setError(null);
+    } catch (err) {
+      console.error("❌ Failed to fetch stocks:", err);
+      setError("Failed to load stock data. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStocks();
+  }, []);
+
+  // ======================================================
+  // SUMMARY
+  // ======================================================
+  const totalQuantity = stocks.reduce((sum, s) => sum + (s.quantity ?? 0), 0);
+  const totalStockValue = stocks.reduce(
     (sum, s) => sum + s.quantity * s.cogs,
     0
   );
 
-  // Loading State
+  // ======================================================
+  // LOADING UI
+  // ======================================================
   if (isLoading) {
     return (
       <div className="rounded-md border">
@@ -99,7 +137,9 @@ export default function StockTable() {
     );
   }
 
-  // Error State
+  // ======================================================
+  // ERROR UI
+  // ======================================================
   if (error) {
     return (
       <div className="rounded-md border">
@@ -115,17 +155,15 @@ export default function StockTable() {
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             <TableRow>
               <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.reload()}
-                  >
+
+                  <Button variant="outline" size="sm" onClick={fetchStocks}>
                     Try Again
                   </Button>
                 </div>
@@ -137,10 +175,13 @@ export default function StockTable() {
     );
   }
 
+  // ======================================================
+  // MAIN RENDER
+  // ======================================================
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+      {/* SUMMARY CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="bg-sidebar-active/10">
           <CardContent className="p-4">
             <p className="text-sm text-gray-600">Total Quantity</p>
@@ -160,7 +201,7 @@ export default function StockTable() {
         </Card>
       </div>
 
-      {/* Table */}
+      {/* TABLE */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -176,7 +217,7 @@ export default function StockTable() {
           </TableHeader>
 
           <TableBody>
-            {dummyStocks.map((stock) => (
+            {stocks.map((stock) => (
               <TableRow key={stock.id}>
                 <TableCell className="font-medium">{stock.name}</TableCell>
                 <TableCell>{stock.category}</TableCell>
@@ -186,14 +227,15 @@ export default function StockTable() {
                 <TableCell>
                   Rp {formatPriceWithSeparator(stock.quantity * stock.cogs)}
                 </TableCell>
+
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent align="end" className="bg-white">
                       <DropdownMenuItem
                         onClick={() => navigate(`/inventory/stock/${stock.id}`)}
@@ -201,6 +243,7 @@ export default function StockTable() {
                         <Eye className="mr-2 h-4 w-4" />
                         View
                       </DropdownMenuItem>
+
                       <DropdownMenuItem onClick={() => window.print()}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print

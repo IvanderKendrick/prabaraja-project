@@ -1034,14 +1034,14 @@ export default function EditRoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Rate/Day</label>
                     <p className="font-semibold">
-                      Rp {item.rateDay.toLocaleString()}
+                      Rp {(item.rateDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
                   <div>
                     <label className="text-sm font-medium">Rate/Hours</label>
                     <p className="font-semibold">
-                      Rp {item.rateHours.toLocaleString()}
+                      Rp {(item.rateHours ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1071,7 +1071,7 @@ export default function EditRoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1373,14 +1373,14 @@ export default function EditRoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Rate/Day</label>
                     <p className="font-semibold">
-                      Rp {item.rateDay.toLocaleString()}
+                      Rp {(item.rateDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
                   <div>
                     <label className="text-sm font-medium">Rate/Hours</label>
                     <p className="font-semibold">
-                      Rp {item.rateHours.toLocaleString()}
+                      Rp {(item.rateHours ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1410,7 +1410,7 @@ export default function EditRoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1562,7 +1562,7 @@ export default function EditRoutingProcessCard({
                 <div className="pt-2">
                   <label className="text-sm font-medium">Book Value</label>
                   <p className="text-lg font-bold">
-                    Rp {item.bookValue.toLocaleString()}
+                    Rp {(item.bookValue ?? 0).toLocaleString()}
                   </p>
                 </div>
 
@@ -1643,7 +1643,7 @@ export default function EditRoutingProcessCard({
                       Total Useful Life (Hours)
                     </label>
                     <p className="font-semibold">
-                      {item.usefulLifeTotalHours.toLocaleString()}
+                      {(item.usefulLifeTotalHours ?? 0).toLocaleString()}
                     </p>
                   </div>
 
@@ -1652,7 +1652,7 @@ export default function EditRoutingProcessCard({
                       Depreciation / Hours
                     </label>
                     <p className="font-semibold">
-                      Rp {item.depreciationPerHour.toLocaleString()}
+                      Rp {(item.depreciationPerHour ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1682,7 +1682,7 @@ export default function EditRoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1804,7 +1804,7 @@ export default function EditRoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Total</label>
                     <p className="font-semibold">
-                      Rp {item.total.toLocaleString()}
+                      Rp {(item.total ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1850,7 +1850,7 @@ export default function EditRoutingProcessCard({
                       Estimated Utility Rate / Day
                     </label>
                     <p className="font-semibold">
-                      Rp {item.ratePerDay.toLocaleString()}
+                      Rp {(item.ratePerDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
@@ -1859,7 +1859,7 @@ export default function EditRoutingProcessCard({
                       Estimated Utility Rate / Hours
                     </label>
                     <p className="font-semibold">
-                      Rp {item.ratePerHour.toLocaleString()}
+                      Rp {(item.ratePerHour ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -1887,7 +1887,7 @@ export default function EditRoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Estimated QTY</label>
                     <p className="font-semibold">
-                      {item.estimatedQty.toLocaleString()} {item.unit}
+                      {(item.estimatedQty ?? 0).toLocaleString()} {item.unit}
                     </p>
                   </div>
                 </div>
@@ -1896,7 +1896,7 @@ export default function EditRoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.rateEstimated.toLocaleString()}
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -2018,7 +2018,7 @@ export default function EditRoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Total</label>
                     <p className="font-semibold">
-                      Rp {item.ofcTotal.toLocaleString()}
+                      Rp {(item.ofcTotal ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -2064,7 +2064,7 @@ export default function EditRoutingProcessCard({
                       Estimated Rate Capacity / Day
                     </label>
                     <p className="font-semibold">
-                      Rp {item.ofcRatePerDay.toLocaleString()}
+                      Rp {(item.ofcRatePerDay ?? 0).toLocaleString()}
                     </p>
                   </div>
 
@@ -2073,7 +2073,7 @@ export default function EditRoutingProcessCard({
                       Estimated Capacity / Hours
                     </label>
                     <p className="font-semibold">
-                      Rp {item.ofcRatePerHour.toLocaleString()}
+                      Rp {(item.ofcRatePerHour ?? 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -2101,7 +2101,8 @@ export default function EditRoutingProcessCard({
                   <div>
                     <label className="text-sm font-medium">Estimated QTY</label>
                     <p className="font-semibold">
-                      {item.ofcEstimatedQty.toLocaleString()} {item.ofcUnit}
+                      {(item.ofcEstimatedQty ?? 0).toLocaleString()}{" "}
+                      {item.ofcUnit}
                     </p>
                   </div>
                 </div>
@@ -2110,7 +2111,7 @@ export default function EditRoutingProcessCard({
                 <div className="pt-3 border-t">
                   <p className="text-sm font-medium">Rate-Estimated</p>
                   <p className="text-xl font-bold text-green-600">
-                    Rp {item.ofcRateEstimated.toLocaleString()}
+                    Rp {(item.ofcRateEstimated ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>

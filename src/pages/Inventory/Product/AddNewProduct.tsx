@@ -13,12 +13,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus } from "lucide-react";
+import axios from "axios";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function AddNewProduct() {
+  const navigate = useNavigate();
+
   const [headerTitle] = useState("Add New Product");
   const [headerDescription] = useState(
     "Create a new product and set its accounts and pricing."
   );
+
+  const getAuthToken = () => {
+    const raw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
+    if (!raw) throw new Error("No token found");
+
+    const parsed = JSON.parse(raw);
+    if (!parsed.access_token) throw new Error("Token missing");
+
+    return parsed.access_token;
+  };
+
   const [product, setProduct] = useState({
     name: "",
     sku: "",
@@ -30,15 +46,17 @@ export default function AddNewProduct() {
     cogsAccount: "",
   });
 
-  const [items, setItems] = useState([
-    {
-      id: 1,
-      coa: "COA001",
-      stockName: "Example Item",
-      sellPrice: 50000,
-      cogs: 40000,
-    },
-  ]);
+  // const [items, setItems] = useState([
+  //   {
+  //     id: 1,
+  //     coa: "COA001",
+  //     stockName: "Example Item",
+  //     sellPrice: 50000,
+  //     cogs: 40000,
+  //   },
+  // ]);
+
+  const [items, setItems] = useState([]);
 
   const handleInputChange = (field: string, value: string) => {
     setProduct((prev) => ({ ...prev, [field]: value }));
@@ -61,10 +79,56 @@ export default function AddNewProduct() {
     );
   };
 
-  const handleSave = () => {
-    console.log("Saving Product:", product);
-    console.log("Items:", items);
-    // TODO: Tambahkan pemanggilan API untuk menyimpan produk
+  // const handleSave = () => {
+  //   console.log("Saving Product:", product);
+  //   console.log("Items:", items);
+  //   // TODO: Tambahkan pemanggilan API untuk menyimpan produk
+  // };
+
+  const handleSave = async () => {
+    try {
+      const token = getAuthToken();
+
+      // mapping items -> items_product
+      const itemsProduct = items.map((item) => ({
+        stock_COA: item.coa,
+        stock_name: item.stockName,
+        sell_price: item.sellPrice,
+        cogs: item.cogs,
+      }));
+
+      const payload = {
+        action: "addProduct",
+        name: product.name, // Product Name
+        sku: product.sku, // SKU
+        category: product.category, // Category
+        unit: product.unit, // Unit
+        warehouses: product.warehouses, // Warehouses
+        description: product.desc, // Description
+        sales_COA: product.salesAccount, // Sales
+        cogs_COA: product.cogsAccount, // Cost of Goods Sold
+        items_product: itemsProduct, // ARRAY of items
+      };
+
+      const response = await axios.post(
+        "https://pbw-backend-api.vercel.app/api/products",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Product saved successfully");
+
+      // OPTIONAL:
+      // alert("Product berhasil disimpan");
+      navigate("/inventory/product");
+    } catch (error: any) {
+      toast.success("Failed to save product:", error.response?.data || error);
+    }
   };
 
   return (

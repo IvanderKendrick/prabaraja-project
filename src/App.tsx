@@ -77,6 +77,7 @@ import Manufacture from "./pages/Manufacture/Manufacture";
 import AddNewBom from "./pages/Manufacture/BoM/AddNewBom";
 import EditProductionPlan from "./pages/Manufacture/PP/EditProductionPlan";
 import EditWorkInProcess from "./pages/Manufacture/WiP/EditWorkInProcess";
+import EditBom from "./pages/Manufacture/BoM/EditBom";
 
 const queryClient = new QueryClient();
 
@@ -176,7 +177,16 @@ function App() {
               />
 
               <Route
-                path="/editproductionplan"
+                path="/editbom/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditBom />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/editproductionplan/:id"
                 element={
                   <ProtectedRoute>
                     <EditProductionPlan />
@@ -185,7 +195,7 @@ function App() {
               />
 
               <Route
-                path="/editworkinprocess"
+                path="/editworkinprocess/:id"
                 element={
                   <ProtectedRoute>
                     <EditWorkInProcess />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Input } from "@/components/ui/input";
@@ -17,13 +17,17 @@ import {
 } from "@/components/ui/select";
 import RoutingProcessCard from "./RoutingProcessCard";
 import getAuthToken from "@/utils/getToken";
+import { useNavigate, useParams } from "react-router-dom";
 
-export default function AddNewBom() {
+export default function EditBom() {
   const [bomName, setBomName] = useState("");
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
   const [estCompletionTime, setEstCompletionTime] = useState(0);
   const [jobOrderProduct, setJobOrderProduct] = useState<"yes" | "no">("no");
+
+  const { id } = useParams();
+  const navigate = useNavigate();
 
   const handleRoutingChange = (id, updatedData) => {
     setRoutingProcesses((prev) =>
@@ -213,11 +217,17 @@ export default function AddNewBom() {
   }));
 
   const handleSave = async () => {
+    if (!id) {
+      toast.error("Bill of Material ID not found");
+      return;
+    }
+
     try {
       const token = getAuthToken();
 
       const payload = {
-        action: "addBillOfMaterial",
+        action: "editBillOfMaterial",
+        id,
         bom_name: bomName,
         sku,
         qty_goods_est: goodsProducedQty,
@@ -227,7 +237,7 @@ export default function AddNewBom() {
         processes: mappedProcesses,
       };
 
-      await axios.post(
+      await axios.put(
         "https://pbw-backend-api.vercel.app/api/products",
         payload,
         {
@@ -237,12 +247,193 @@ export default function AddNewBom() {
         }
       );
 
-      toast.success("Bill of Material berhasil disimpan");
+      toast.success("Bill of Material Updated Successfully");
     } catch (error: any) {
       console.error(error);
-      toast.error("Gagal menyimpan Bill of Material");
+      toast.error("Failed to update the Bill of Material");
+    } finally {
+      navigate("/manufacture");
     }
   };
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchBom = async () => {
+      try {
+        const token = getAuthToken();
+
+        const res = await axios.get(
+          `https://pbw-backend-api.vercel.app/api/products`,
+          {
+            params: {
+              action: "getBillOfMaterials",
+              search: id,
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const bom = res.data?.data?.[0];
+        if (!bom) return;
+
+        /* =======================
+         GENERAL INFORMATION
+      ======================= */
+        setBomName(bom.bom_name || "");
+        setSku(bom.sku || "");
+        setGoodsProducedQty(bom.qty_goods_est || 0);
+        setCategory(bom.category || "");
+        setEstCompletionTime(bom.est_compl_time || 0);
+        setJobOrderProduct(bom.job_order_product ? "yes" : "no");
+
+        /* =======================
+         ROUTING PROCESSES
+      ======================= */
+
+        const mappedProcesses = (bom.processes || []).map((p: any) => ({
+          id: Date.now() + Math.random(),
+
+          processName: p.process_name || "",
+          jobDesc: p.job_desc || "",
+
+          /* ---------- DIRECT MATERIAL ---------- */
+          items: (p.direct_material || []).map((i: any) => ({
+            id: Date.now() + Math.random(),
+            coa: i.coa || "",
+            name: i.item_name || "",
+            desc: i.desc || "",
+            qty: i.qty || 0,
+            unit: i.unit || "",
+            price: i.price || 0,
+          })),
+
+          /* ---------- DIRECT LABOR ---------- */
+          laborItems: (p.direct_labor || []).map((l: any) => ({
+            id: Date.now() + Math.random(),
+            coa: l.coa || "",
+            name: l.item_name || "",
+            desc: l.desc || "",
+            qty: l.qty || 0,
+            unit: l.unit || "",
+            rateMonth: l.rate_per_month || 0,
+            workingDay: l.workday_per_month || 0,
+            workingHours: l.workhours_per_day || 0,
+            orderCompletion: l.order_compl_time || 0,
+            rateDay: l.rate_per_day || 0,
+            rateHours: l.rate_per_hours || 0,
+            orderCompletionDays: 0,
+            rateEstimated: l.rate_estimated || 0,
+          })),
+
+          /* ---------- INDIRECT MATERIAL (OVERHEAD) ---------- */
+          overheadItems: (p.indirect_material || []).map((o: any) => ({
+            id: Date.now() + Math.random(),
+            coa: o.coa || "",
+            name: o.item_name || "",
+            desc: o.desc || "",
+            qty: o.qty || 0,
+            unit: o.unit || "",
+            price: o.price || 0,
+          })),
+
+          /* ---------- INDIRECT LABOR ---------- */
+          indirectLaborItems: (p.indirect_labor || []).map((il: any) => ({
+            id: Date.now() + Math.random(),
+            coa: il.coa || "",
+            name: il.item_name || "",
+            desc: il.desc || "",
+            qty: il.qty || 0,
+            unit: il.unit || "",
+            rateMonth: il.rate_per_month || 0,
+            workingDay: il.workday_per_month || 0,
+            workingHours: il.workhours_per_day || 0,
+            orderCompletion: il.order_compl_time || 0,
+            rateDay: il.rate_per_day || 0,
+            rateHours: il.rate_per_hours || 0,
+            rateEstimated: il.rate_estimated || 0,
+          })),
+
+          /* ---------- DEPRECIATION ---------- */
+          deprItems: (p.items_depreciation || []).map((d: any) => ({
+            id: Date.now() + Math.random(),
+            coa: d.coa || "",
+            name: d.item_name || "",
+            desc: d.desc || "",
+            qty: d.qty || 0,
+            unit: d.unit || "",
+            price: d.price || 0,
+            accDep: d.acc_dep || 0,
+            usefulLife: d.est_useful || 0,
+            operatingDay: d.operatingday_per_month || 0,
+            operatingHours: d.operatinghours_per_day || 0,
+            salvage: d.salvage_value || 0,
+            orderCompletion: d.order_compl_time || 0,
+            bookValue: d.book_value || 0,
+            usefulLifeTotalHours: d.est_useful_total || 0,
+            depreciationPerHour: d.dep_per_hours || 0,
+            rateEstimated: d.rate_estimated || 0,
+          })),
+
+          /* ---------- UTILITIES ---------- */
+          utilitiesItems: (p.utilities_cost || []).map((u: any) => ({
+            id: Date.now() + Math.random(),
+            coa: u.coa || "",
+            name: u.item_name || "",
+            desc: u.desc || "",
+            qty: u.qty || 0,
+            unit: u.unit || "",
+            price: u.price || 0,
+            operatingDay: u.operating_day || 0,
+            operatingHours: u.operatinghours_per_day || 0,
+            orderCompletion: u.order_compl_time || 0,
+            ratePerDay: u.est_per_day || 0,
+            ratePerHour: u.est_per_hours || 0,
+            estimatedQty: u.est_qty || 0,
+            rateEstimated: u.rate_estimated || 0,
+            total: u.total || 0,
+          })),
+
+          /* ---------- OTHER FOC ---------- */
+          ofcItems: (p.other_foc || []).map((f: any) => ({
+            id: Date.now() + Math.random(),
+            ofcCoa: f.coa || "",
+            ofcName: f.item_name || "",
+            ofcDesc: f.desc || "",
+            ofcQty: f.qty || 0,
+            ofcUnit: f.unit || "",
+            ofcPrice: f.price || 0,
+            ofcOperatingDay: f.operating_day || 0,
+            ofcOperatingHours: f.operatinghours_per_day || 0,
+            ofcOrderTime: f.order_compl_time || 0,
+            ofcEstimatedQty: f.est_qty || 0,
+            ofcRateEstimated: f.rate_estimated || 0,
+            ofcTotal: f.total || 0,
+            ofcRatePerDay: f.est_per_day || 0,
+            ofcRatePerHour: f.est_per_hours || 0,
+          })),
+
+          // 🔥 INI YANG KAMU LUPA
+          totalMaterial: p.total_direct_material || 0,
+          totalLabor: p.total_direct_labor || 0,
+          totalIndirectMaterial: p.total_indirect_material || 0,
+          totalIndirectLabor: p.total_indirect_labor || 0,
+          totalDepreciation: p.total_items_depreciation || 0,
+          totalUtilities: p.total_utilities_cost || 0,
+          totalOfc: p.total_other_foc || 0,
+        }));
+
+        setRoutingProcesses(mappedProcesses);
+      } catch (error) {
+        console.error(error);
+        toast.error("Gagal memuat Bill of Material");
+      }
+    };
+
+    fetchBom();
+  }, [id]);
 
   return (
     <div className="flex h-screen w-full">
@@ -250,8 +441,8 @@ export default function AddNewBom() {
 
       <div className="flex-1 overflow-auto">
         <Header
-          title="Add New Bill of Material"
-          description="Create a new Bill of Material for manufacturing process"
+          title="Edit Bill of Material"
+          description="Edit existing Bill of Material for manufacturing process"
         />
 
         <div className="p-6 space-y-8">

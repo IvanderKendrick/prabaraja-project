@@ -78,12 +78,14 @@ const Manufacture = () => {
             </Tabs>
 
             {/* Add New Button */}
-            <Button
-              className="bg-sidebar-active hover:bg-green-600 text-white"
-              onClick={() => navigate("/addnewbom")}
-            >
-              + Add New
-            </Button>
+            {activeTab === "bill-of-materials" && (
+              <Button
+                className="bg-sidebar-active hover:bg-green-600 text-white"
+                onClick={() => navigate("/addnewbom")}
+              >
+                + Add New
+              </Button>
+            )}
           </div>
 
           {/* CONTENT */}
