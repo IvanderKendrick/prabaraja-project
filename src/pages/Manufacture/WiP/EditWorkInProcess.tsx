@@ -14,6 +14,27 @@ import { toast } from "sonner";
 import EditRoutingProcessCardWIP from "./EditRoutingProcessCardWIP";
 
 export default function EditProductionPlan() {
+  // bagian bawah
+
+  const handleActualProductionChange = (
+    field: keyof typeof actualProduction,
+    value: number
+  ) => {
+    setActualProduction((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const [actualProduction, setActualProduction] = useState({
+    coa_finished_goods: 0,
+    coa_defective_goods: 0,
+    coa_expenses: 0,
+    total_finished_goods: 0,
+    total_defective_goods: 0,
+    total_expenses: 0,
+  });
+
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -22,8 +43,6 @@ export default function EditProductionPlan() {
       prev.map((p) => (p.id === id ? { ...p, ...updatedData } : p))
     );
   };
-
-  // const [routingProcesses, setRoutingProcesses] = useState([
   //   {
   //     id: Date.now(),
   //     processName: "",
@@ -254,19 +273,6 @@ export default function EditProductionPlan() {
     setRoutingProcesses((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // useEffect(() => {
-  //   const total = deprItems.reduce((sum, item) => sum + item.rateEstimated, 0);
-  //   setDeprTotal(total);
-  // }, [deprItems]);
-
-  // useEffect(() => {
-  //   const total = indirectLaborItems.reduce(
-  //     (sum, item) => sum + item.rateEstimated,
-  //     0
-  //   );
-  //   setIndirectLaborTotal(total);
-  // }, [indirectLaborItems]);
-
   useEffect(() => {
     console.log("Fetching production plan for ID:", id);
     if (!id) return;
@@ -304,6 +310,15 @@ export default function EditProductionPlan() {
         setName(data.product_name || "");
         setCategory(data.category || "");
         setSku(data.sku || "");
+
+        setActualProduction({
+          coa_finished_goods: data.coa_finished_goods ?? 0,
+          coa_defective_goods: data.coa_defective_goods ?? 0,
+          coa_expenses: data.coa_expenses ?? 0,
+          total_finished_goods: data.total_finished_goods ?? 0,
+          total_defective_goods: data.total_defective_goods ?? 0,
+          total_expenses: data.total_expenses ?? 0,
+        });
 
         // ===============================
         // ROUTING PROCESSES
@@ -465,6 +480,26 @@ export default function EditProductionPlan() {
         console.log("Mapped Processes:", mappedProcesses);
 
         setRoutingProcesses(mappedProcesses);
+
+        const totalFactoryOH = mappedProcesses.reduce((sum, p) => {
+          return (
+            sum +
+            (p.totalIndirectMaterial || 0) +
+            (p.totalIndirectLabor || 0) +
+            (p.totalDepreciation || 0) +
+            (p.totalUtilities || 0) +
+            (p.totalOfc || 0)
+          );
+        }, 0);
+
+        const totalDirectCost = mappedProcesses.reduce((sum, p) => {
+          return sum + (p.totalMaterial || 0) + (p.totalLabor || 0);
+        }, 0);
+
+        const totalCOGM = totalFactoryOH + totalDirectCost;
+
+        setTotalFactoryOHEstimated(totalFactoryOH);
+        setCogmPerUnitEstimated(totalCOGM);
       } catch (err) {
         console.error("Failed to fetch production plan:", err);
       }
@@ -477,6 +512,10 @@ export default function EditProductionPlan() {
   const [goodsProducedQty, setGoodsProducedQty] = useState(0);
 
   // HITUNGAN GENERAL START
+  const [totalFactoryOHEstimated, setTotalFactoryOHEstimated] =
+    useState<number>(0);
+  const [cogmPerUnitEstimated, setCogmPerUnitEstimated] = useState<number>(0);
+
   const totalFactoryOH = routingProcesses.reduce((sum, p) => {
     return (
       sum +
@@ -494,6 +533,13 @@ export default function EditProductionPlan() {
 
   const totalCOGM = totalFactoryOH + totalDirectCost;
 
+  const productionLoss =
+    actualProduction.total_expenses *
+    (totalCOGM /
+      (actualProduction.total_finished_goods +
+        actualProduction.total_defective_goods +
+        actualProduction.total_expenses));
+
   // HITUNGAN GENERAL END
 
   const [productionCode, setProductionCode] = useState("");
@@ -510,28 +556,139 @@ export default function EditProductionPlan() {
     goodsProducedQty > 0
       ? totalCOGM / (goodsProducedQty * totalProductionOrder)
       : 0;
+  const cogmPerUnitOri =
+    goodsProducedQty > 0
+      ? cogmPerUnitEstimated / (goodsProducedQty * totalProductionOrder)
+      : 0;
 
-  const handleSaveProductionPlan = async () => {
+  // const handleSaveWIP = async () => {
+  //   if (!id) {
+  //     toast.error("Work In Process ID not found");
+  //     return;
+  //   }
+
+  //   try {
+  //     const token = getAuthToken();
+
+  //     const payload = {
+  //       action: "editWorkInProcess",
+  //       id: id,
+  //       prod_code: productionCode,
+  //       job_order_num: Number(jobOrderNumber),
+  //       total_prod_order: totalProductionOrder,
+  //       warehouse: warehouse,
+  //       schedule: {
+  //         start_date: scheduleStart,
+  //         end_date: scheduleFinish,
+  //       },
+  //     };
+
+  //     const response = await axios.put(
+  //       "https://pbw-backend-api.vercel.app/api/products",
+  //       payload,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+
+  //     const resData = response.data;
+
+  //     if (!resData.error) {
+  //       toast.success(
+  //         resData.message || "Work In Process updated successfully"
+  //       );
+
+  //       // optional: kalau mau update summary dari response backend
+  //       // resData.data.total_cogm_est
+  //       // resData.data.cogm_unit_est
+  //     } else {
+  //       toast.error(resData.message || "Failed to update work in process");
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Edit Work In Process Error:", error);
+
+  //     toast.error(
+  //       error?.response?.data?.message ||
+  //         "Something went wrong while saving work in process"
+  //     );
+  //   } finally {
+  //     navigate("/manufacture");
+  //   }
+  // };
+
+  const handleSaveWIP = async () => {
     if (!id) {
-      toast.error("Production Plan ID not found");
+      toast.error("Work In Process ID not found");
       return;
     }
 
     try {
       const token = getAuthToken();
 
+      // ================================
+      // MAPPING ROUTING PROCESSES → ACTUAL
+      // ================================
+      const processes_actual = routingProcesses.map((proc) => ({
+        other_foc_actual: (proc.ofcItems || []).map((item) => ({
+          rate: item.ofcPrice,
+          est_qty: item.ofcEstimatedQty,
+        })),
+
+        direct_labor_actual: (proc.laborItems || []).map((item) => ({
+          qty: item.qty,
+          rate_per_hours: item.rateHours,
+          order_compl_time: item.orderCompletion,
+        })),
+
+        indirect_labor_actual: (proc.indirectLaborItems || []).map((item) => ({
+          qty: item.qty,
+          rate_per_hours: item.rateHours,
+          order_compl_time: item.orderCompletion,
+        })),
+
+        utilities_cost_actual: (proc.utilitiesItems || []).map((item) => ({
+          rate: item.price,
+          est_qty: item.estimatedQty,
+        })),
+
+        direct_material_actual: (proc.items || []).map((item) => ({
+          qty: item.qty,
+          price: item.price,
+        })),
+
+        indirect_material_actual: (proc.indirectMaterialItems || []).map(
+          (item) => ({
+            qty: item.qty,
+            price: item.price,
+          })
+        ),
+
+        items_depreciation_actual: (proc.deprItems || []).map((item) => ({
+          total_est_rate: item.rateEstimated,
+        })),
+      }));
+
+      // ================================
+      // FINAL PAYLOAD
+      // ================================
       const payload = {
-        action: "editProductionPlan",
-        id: id,
-        prod_code: productionCode,
-        job_order_num: Number(jobOrderNumber),
-        total_prod_order: totalProductionOrder,
-        warehouse: warehouse,
-        schedule: {
-          start_date: scheduleStart,
-          end_date: scheduleFinish,
-        },
+        action: "editWorkInProcess",
+        id,
+        processes_actual,
+
+        // --- ACTUAL PRODUCTION ---
+        coa_finished_goods: actualProduction.coa_finished_goods,
+        coa_defective_goods: actualProduction.coa_defective_goods,
+        coa_expenses: actualProduction.coa_expenses,
+        total_finished_goods: actualProduction.total_finished_goods,
+        total_defective_goods: actualProduction.total_defective_goods,
+        total_expenses: actualProduction.total_expenses,
       };
+
+      // console.log("Payload for saving WIP:", payload);
 
       const response = await axios.put(
         "https://pbw-backend-api.vercel.app/api/products",
@@ -548,24 +705,25 @@ export default function EditProductionPlan() {
 
       if (!resData.error) {
         toast.success(
-          resData.message || "Production plan updated successfully"
+          resData.message || "Work In Process updated successfully"
         );
 
-        // optional: kalau mau update summary dari response backend
-        // resData.data.total_cogm_est
-        // resData.data.cogm_unit_est
+        // OPTIONAL (kalau mau update summary)
+        // setTotalCOGM(resData.data.total_cogm_est);
+        // setCOGMUnit(resData.data.cogm_unit_est);
       } else {
-        toast.error(resData.message || "Failed to update production plan");
+        toast.error(resData.message || "Failed to update Work In Process");
       }
     } catch (error: any) {
-      console.error("Edit Production Plan Error:", error);
+      console.error("Edit Work In Process Error:", error);
 
       toast.error(
         error?.response?.data?.message ||
-          "Something went wrong while saving production plan"
+          "Something went wrong while saving Work In Process"
       );
     } finally {
       navigate("/manufacture");
+      // console.log("Save WIP process completed.");
     }
   };
 
@@ -738,7 +896,7 @@ export default function EditProductionPlan() {
                 TOTAL FACTORY OVERHEAD COST - ESTIMATED
               </span>
               <span className="font-bold text-green-700">
-                Rp {totalFactoryOH.toLocaleString()}
+                Rp {totalFactoryOHEstimated.toLocaleString()}
               </span>
             </div>
 
@@ -747,12 +905,159 @@ export default function EditProductionPlan() {
                 TOTAL COST OF GOODS MANUFACTURED - ESTIMATED
               </span>
               <span className="font-bold text-green-700">
-                Rp {totalCOGM.toLocaleString()}
+                Rp {cogmPerUnitEstimated.toLocaleString()}
               </span>
             </div>
 
             <div className="flex justify-between">
               <span className="font-medium">COGM / Unit - ESTIMATED</span>
+              <span className="font-bold text-green-700">
+                Rp {cogmPerUnitOri.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          <div className="border rounded-xl p-6 bg-white mt-6 space-y-4">
+            <h3 className="text-lg font-semibold">
+              ACTUAL PRODUCTION QUANTITY
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* LEFT - COA */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">
+                    COA Finished Goods
+                  </label>
+                  <Input
+                    type="number"
+                    value={actualProduction.coa_finished_goods}
+                    onChange={(e) =>
+                      handleActualProductionChange(
+                        "coa_finished_goods",
+                        Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">
+                    COA Defective Goods
+                  </label>
+                  <Input
+                    type="number"
+                    value={actualProduction.coa_defective_goods}
+                    onChange={(e) =>
+                      handleActualProductionChange(
+                        "coa_defective_goods",
+                        Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">COA Expenses</label>
+                  <Input
+                    type="number"
+                    value={actualProduction.coa_expenses}
+                    onChange={(e) =>
+                      handleActualProductionChange(
+                        "coa_expenses",
+                        Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* RIGHT - QUANTITY */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Finished Goods</label>
+                  <Input
+                    type="number"
+                    value={actualProduction.total_finished_goods}
+                    onChange={(e) =>
+                      handleActualProductionChange(
+                        "total_finished_goods",
+                        Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Defective Goods</label>
+                  <Input
+                    type="number"
+                    value={actualProduction.total_defective_goods}
+                    onChange={(e) =>
+                      handleActualProductionChange(
+                        "total_defective_goods",
+                        Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Spoiled Goods</label>
+                  <Input
+                    type="number"
+                    value={actualProduction.total_expenses}
+                    onChange={(e) =>
+                      handleActualProductionChange(
+                        "total_expenses",
+                        Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border rounded-xl p-6 bg-white mt-10 space-y-4">
+            <h2 className="text-xl font-semibold">Summary (Actual)</h2>
+
+            <div className="flex justify-between">
+              <span className="font-medium">
+                TOTAL FACTORY OVERHEAD COST - ACTUAL
+              </span>
+              <span className="font-bold text-green-700">
+                Rp {totalFactoryOH.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="font-medium">
+                TOTAL COST OF GOODS MANUFACTURED - ACTUAL
+              </span>
+              <span className="font-bold text-green-700">
+                Rp {totalCOGM.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="font-medium">PRODUCTION LOSS</span>
+              <span className="font-bold text-green-700">
+                Rp {productionLoss.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="font-medium">
+                NETT TOTAL COST OF GOODS MANUFACTURED
+              </span>
+              <span className="font-bold text-green-700">
+                Rp {(totalCOGM - productionLoss).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="font-medium">COGM / Unit - ACTUAL</span>
               <span className="font-bold text-green-700">
                 Rp {cogmPerUnit.toLocaleString()}
               </span>
@@ -763,7 +1068,7 @@ export default function EditProductionPlan() {
           <div className="flex justify-end">
             <Button
               className="bg-sidebar-active hover:bg-green-600 text-white px-6"
-              onClick={handleSaveProductionPlan}
+              onClick={handleSaveWIP}
             >
               Save
             </Button>

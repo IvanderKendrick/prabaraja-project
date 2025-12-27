@@ -1,6 +1,9 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
+
 import {
   Table,
   TableHead,
@@ -21,64 +24,172 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import getAuthToken from "@/utils/getToken";
+import { toast } from "sonner";
 
 export default function StockDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   // Header info
   const headerTitle = "Stock Detail";
   const headerDescription = "View and manage specific stock item details.";
 
   // ======= State untuk stock info =======
   const [stockInfo, setStockInfo] = useState({
-    name: "Karton Box Besar",
-    sku: "BX-001",
-    category: "Packaging",
-    unit: "pcs",
-    cogs: 5000,
-    totalQuantity: 1200,
-    totalStockValue: 5000 * 1200,
-    minimumStock: 200,
-    warehouse: "Gudang A",
-    accountName: "Inventory Packaging",
-    description: "Karton besar untuk pengiriman produk ukuran besar",
+    name: "",
+    sku: "",
+    category: "",
+    unit: "",
+    cogs: 0, // sementara 0
+    totalQuantity: 0, // WAJIB default number
+    minimumStock: 0,
+    warehouse: "",
+    accountName: "",
+    description: "",
+    copyToProduct: false,
   });
 
   const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
+  // const [adjustmentData, setAdjustmentData] = useState({
+  //   date: new Date().toLocaleDateString("id-ID"),
+  //   number: "ADJ-20251031-001",
+  //   memo: "",
+  //   account: "",
+  //   recordedQty: 1200,
+  //   difference: 0,
+  //   price: 5000,
+  // });
+
   const [adjustmentData, setAdjustmentData] = useState({
-    date: new Date().toLocaleDateString("id-ID"),
-    number: "ADJ-20251031-001",
+    date: "", // akan diisi saat dialog dibuka / user pilih
+    number: "", // nomor adjustment dari backend / generator
     memo: "",
     account: "",
-    recordedQty: 1200,
-    difference: 0,
-    price: 5000,
+    recordedQty: 0, // default aman
+    difference: 0, // derived nanti
+    price: 0, // default aman
   });
 
-  const stockHistory = [
-    {
-      date: "2025-10-10",
-      desc: "Penerimaan Barang dari Supplier",
-      movement: "+",
-      quantity: 300,
-      price: 5000,
-      total: 1500000,
-    },
-    {
-      date: "2025-10-15",
-      desc: "Penjualan ke Customer A",
-      movement: "-",
-      quantity: 150,
-      price: 5000,
-      total: 750000,
-    },
-    {
-      date: "2025-10-20",
-      desc: "Adjustment Stock (Koreksi)",
-      movement: "+",
-      quantity: 50,
-      price: 5000,
-      total: 250000,
-    },
-  ];
+  // const stockHistory = [
+  //   {
+  //     date: "2025-10-10",
+  //     desc: "Penerimaan Barang dari Supplier",
+  //     movement: "+",
+  //     quantity: 300,
+  //     price: 5000,
+  //     total: 1500000,
+  //   },
+  //   {
+  //     date: "2025-10-15",
+  //     desc: "Penjualan ke Customer A",
+  //     movement: "-",
+  //     quantity: 150,
+  //     price: 5000,
+  //     total: 750000,
+  //   },
+  //   {
+  //     date: "2025-10-20",
+  //     desc: "Adjustment Stock (Koreksi)",
+  //     movement: "+",
+  //     quantity: 50,
+  //     price: 5000,
+  //     total: 250000,
+  //   },
+  // ];
+
+  type StockHistoryItem = {
+    date: string;
+    desc: string;
+    movement: "+" | "-";
+    quantity: number;
+    price: number;
+    total: number;
+  };
+
+  const [stockHistory, setStockHistory] = useState<StockHistoryItem[]>([]);
+
+  // Fetch
+  useEffect(() => {
+    if (!id) return;
+    const fetchStockInfo = async () => {
+      try {
+        const token = await getAuthToken();
+
+        const res = await axios.get(
+          "https://pbw-backend-api.vercel.app/api/products",
+          {
+            params: {
+              action: "getStocks",
+              search: id, // product_id
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = res.data.formattedData?.[0];
+        if (!data) return;
+
+        setStockInfo({
+          name: data.name,
+          sku: data.sku,
+          category: data.category,
+          unit: data.unit,
+          cogs: 0, // sementara
+          totalQuantity: data.current_stock,
+          minimumStock: data.minimum_stock,
+          warehouse: data.warehouses?.join(", ") ?? "-",
+          accountName: data.stock_COA,
+          description: data.description,
+          copyToProduct: data.copyToProduct,
+        });
+      } catch (error) {
+        console.error("Failed to fetch stock info:", error);
+      }
+    };
+
+    fetchStockInfo();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchStockHistory = async () => {
+      try {
+        const token = await getAuthToken();
+
+        const res = await axios.get(
+          "https://pbw-backend-api.vercel.app/api/products?action=getStockMovement",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const mappedHistory: StockHistoryItem[] = res.data.data.map(
+          (item: any) => ({
+            date: item.inventory_date,
+            desc: item.description,
+            movement: item.type === "Sales" ? "-" : "+",
+            quantity: item.nett_quantity,
+            price: item.nett_price_item,
+            total: item.nett_purchase,
+          })
+        );
+
+        // sort by date DESC (latest first)
+        mappedHistory.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        setStockHistory(mappedHistory);
+      } catch (error) {
+        console.error("Failed to fetch stock movement:", error);
+      }
+    };
+
+    fetchStockHistory();
+  }, []);
 
   // Handle perubahan input data
   const handleChange = (field: string, value: string | number) => {
@@ -89,8 +200,47 @@ export default function StockDetail() {
     setAdjustmentData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveChanges = () => {
-    console.log("Saving changes:", stockInfo);
+  // const handleSaveChanges = () => {
+  //   console.log("Saving changes:", stockInfo);
+  // };
+
+  const handleSaveChanges = async () => {
+    try {
+      const token = await getAuthToken();
+
+      const payload = {
+        action: "editStock",
+        id,
+        category: stockInfo.category,
+        minimum_stock: stockInfo.minimumStock,
+        warehouses: stockInfo.warehouse ? [stockInfo.warehouse] : [],
+        description: stockInfo.description,
+        copyToProduct: stockInfo.copyToProduct,
+      };
+
+      const response = await axios.put(
+        "https://pbw-backend-api.vercel.app/api/products",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Stock updated:", response.data);
+
+      toast.success(response.data?.message || "Stock updated successfully");
+    } catch (error: any) {
+      console.error("Failed to update stock:", error);
+
+      const errorMessage =
+        error?.response?.data?.message || "Failed to update stock";
+
+      toast.error(errorMessage);
+    } finally {
+      navigate("/inventory/stock");
+    }
   };
 
   const handleAdjustmentSubmit = () => {
@@ -118,7 +268,8 @@ export default function StockDetail() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-semibold text-blue-900">
-                  {stockInfo.totalQuantity.toLocaleString()} {stockInfo.unit}
+                  {(stockInfo.totalQuantity ?? 0).toLocaleString()}{" "}
+                  {stockInfo.unit}
                 </p>
               </CardContent>
             </Card>
@@ -144,7 +295,10 @@ export default function StockDetail() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-semibold text-yellow-900">
-                  Rp {stockInfo.totalStockValue.toLocaleString("id-ID")}
+                  Rp{" "}
+                  {(stockInfo.cogs * stockInfo.totalQuantity).toLocaleString(
+                    "id-ID"
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -230,7 +384,16 @@ export default function StockDetail() {
               </div>
 
               <div className="flex items-center space-x-2 sm:col-span-2">
-                <Checkbox id="copyToProduct" />
+                <Checkbox
+                  id="copyToProduct"
+                  checked={stockInfo.copyToProduct}
+                  onCheckedChange={(checked) =>
+                    setStockInfo((prev) => ({
+                      ...prev,
+                      copyToProduct: Boolean(checked),
+                    }))
+                  }
+                />
                 <label htmlFor="copyToProduct" className="text-sm font-medium">
                   Copy to Product
                 </label>

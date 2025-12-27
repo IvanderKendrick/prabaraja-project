@@ -52,6 +52,7 @@ export default function EditRoutingProcessCardWIP({
   // ===============================
   // const [ofcItems, setOfcItems] = useState([]);
   const [ofcItems, setOfcItems] = useState(data.ofcItems || []);
+  const [ofcItemsOri, setOfcItemsOri] = useState(data.ofcItems || []);
 
   const handleAddOfcItem = () => {
     setOfcItems((prev) => [
@@ -108,7 +109,7 @@ export default function EditRoutingProcessCardWIP({
         const updated = { ...item, [field]: value };
 
         // 1. Total
-        updated.ofcTotal = updated.ofcQty * updated.ofcPrice;
+        updated.ofcTotal = updated.ofcQty ?? 0 * updated.ofcPrice;
 
         // 2. Rate/Day
         updated.ofcRatePerDay =
@@ -123,17 +124,18 @@ export default function EditRoutingProcessCardWIP({
             : 0;
 
         // 4. Estimated QTY
-        updated.ofcEstimatedQty =
-          updated.ofcOperatingDay > 0 && updated.ofcOperatingHours > 0
-            ? (updated.ofcQty /
-                updated.ofcOperatingDay /
-                updated.ofcOperatingHours) *
-              updated.ofcOrderTime
-            : 0;
+        // updated.ofcEstimatedQty =
+        //   updated.ofcOperatingDay > 0 && updated.ofcOperatingHours > 0
+        //     ? (updated.ofcQty /
+        //         updated.ofcOperatingDay /
+        //         updated.ofcOperatingHours) *
+        //       updated.ofcOrderTime
+        //     : 0;
 
         // 5. Rate Estimated
-        updated.ofcRateEstimated =
-          updated.ofcRatePerHour * updated.ofcOrderTime;
+        updated.ofcRateEstimated = updated.ofcPrice * updated.ofcEstimatedQty;
+        // updated.ofcRateEstimated =
+        //   updated.ofcRatePerHour * updated.ofcOrderTime;
 
         return updated;
       });
@@ -157,11 +159,18 @@ export default function EditRoutingProcessCardWIP({
     (sum, i) => sum + (i.ofcRateEstimated || 0),
     0
   );
+  const ofcTotalOri = ofcItemsOri.reduce(
+    (sum, i) => sum + (i.ofcRateEstimated || 0),
+    0
+  );
 
   // ===================
 
   // const [utilitiesItems, setUtilitiesItems] = useState([]);
   const [utilitiesItems, setUtilitiesItems] = useState(
+    data.utilitiesItems || []
+  );
+  const [utilitiesItemsOri, setUtilitiesItemsOri] = useState(
     data.utilitiesItems || []
   );
 
@@ -217,7 +226,7 @@ export default function EditRoutingProcessCardWIP({
         const updated = { ...item, [field]: value };
 
         // 1. Total = QTY * Price
-        updated.total = updated.qty * updated.price;
+        updated.total = updated.qty ?? 0 * updated.price;
 
         // 2. Estimated Utility Rate/Day
         updated.ratePerDay =
@@ -230,14 +239,15 @@ export default function EditRoutingProcessCardWIP({
             : 0;
 
         // 4. Estimated QTY
-        updated.estimatedQty =
-          updated.operatingDay > 0 && updated.operatingHours > 0
-            ? (updated.qty / updated.operatingDay / updated.operatingHours) *
-              updated.orderCompletion
-            : 0;
+        // updated.estimatedQty =
+        //   updated.operatingDay > 0 && updated.operatingHours > 0
+        //     ? (updated.qty / updated.operatingDay / updated.operatingHours) *
+        //       updated.orderCompletion
+        //     : 0;
 
         // 5. Rate Estimated
-        updated.rateEstimated = updated.ratePerHour * updated.orderCompletion;
+        // updated.rateEstimated = updated.ratePerHour * updated.orderCompletion;
+        updated.rateEstimated = updated.estimatedQty * updated.price;
 
         return updated;
       });
@@ -262,10 +272,22 @@ export default function EditRoutingProcessCardWIP({
     (sum, i) => sum + (i.rateEstimated || 0),
     0
   );
+  const utilitiesTotalOri = utilitiesItemsOri.reduce(
+    (sum, i) => sum + (i.rateEstimated || 0),
+    0
+  );
 
   // const [deprItems, setDeprItems] = useState([]);
   const [deprItems, setDeprItems] = useState(data.deprItems || []);
-  const [deprTotal, setDeprTotal] = useState(0);
+  const [deprItemsOri, setDeprItemsOri] = useState(data.deprItems || []);
+  const deprItemsTotal = deprItems.reduce(
+    (sum, item) => sum + item.rateEstimated,
+    0
+  );
+  const deprItemsTotalOri = deprItemsOri.reduce(
+    (sum, item) => sum + item.rateEstimated,
+    0
+  );
 
   const handleAddDepreciationItem = () => {
     const newItem = {
@@ -302,45 +324,45 @@ export default function EditRoutingProcessCardWIP({
 
         const updated = { ...item, [field]: value };
 
-        // ---------- BOOK VALUE ----------
-        updated.bookValue = updated.qty * updated.price - updated.accDep;
+        // // ---------- BOOK VALUE ----------
+        // updated.bookValue = updated.qty * updated.price - updated.accDep;
 
-        // ---------- USEFUL LIFE TOTAL HOURS ----------
-        if (
-          updated.operatingDay > 0 &&
-          updated.operatingHours > 0 &&
-          updated.usefulLife > 0
-        ) {
-          updated.usefulLifeTotalHours =
-            updated.operatingDay *
-            updated.operatingHours *
-            12 *
-            updated.usefulLife;
-        } else {
-          updated.usefulLifeTotalHours = 0;
-        }
+        // // ---------- USEFUL LIFE TOTAL HOURS ----------
+        // if (
+        //   updated.operatingDay > 0 &&
+        //   updated.operatingHours > 0 &&
+        //   updated.usefulLife > 0
+        // ) {
+        //   updated.usefulLifeTotalHours =
+        //     updated.operatingDay *
+        //     updated.operatingHours *
+        //     12 *
+        //     updated.usefulLife;
+        // } else {
+        //   updated.usefulLifeTotalHours = 0;
+        // }
 
-        // ---------- DEPRECIATION / HOUR ----------
-        if (updated.usefulLifeTotalHours > 0) {
-          updated.depreciationPerHour =
-            (updated.bookValue - updated.salvage) /
-            updated.usefulLifeTotalHours;
-        } else {
-          updated.depreciationPerHour = 0;
-        }
+        // // ---------- DEPRECIATION / HOUR ----------
+        // if (updated.usefulLifeTotalHours > 0) {
+        //   updated.depreciationPerHour =
+        //     (updated.bookValue - updated.salvage) /
+        //     updated.usefulLifeTotalHours;
+        // } else {
+        //   updated.depreciationPerHour = 0;
+        // }
 
-        // ---------- RATE ESTIMATED ----------
-        const valid =
-          updated.operatingDay > 0 &&
-          updated.operatingHours > 0 &&
-          updated.orderCompletion > 0;
+        // // ---------- RATE ESTIMATED ----------
+        // const valid =
+        //   updated.operatingDay > 0 &&
+        //   updated.operatingHours > 0 &&
+        //   updated.orderCompletion > 0;
 
-        if (valid) {
-          updated.rateEstimated =
-            updated.depreciationPerHour * updated.orderCompletion;
-        } else {
-          updated.rateEstimated = updated.accDep;
-        }
+        // if (valid) {
+        //   updated.rateEstimated =
+        //     updated.depreciationPerHour * updated.orderCompletion;
+        // } else {
+        //   updated.rateEstimated = updated.accDep;
+        // }
 
         return updated;
       });
@@ -381,17 +403,23 @@ export default function EditRoutingProcessCardWIP({
     });
   };
 
-  useEffect(() => {
-    const total = deprItems.reduce((sum, item) => sum + item.rateEstimated, 0);
-    setDeprTotal(total);
-  }, [deprItems]);
-
   // INDIRECT LABOR COST STATES
   // const [indirectLaborItems, setIndirectLaborItems] = useState([]);
   const [indirectLaborItems, setIndirectLaborItems] = useState(
     data.indirectLaborItems || []
   );
-  const [indirectLaborTotal, setIndirectLaborTotal] = useState(0);
+  const [indirectLaborItemsOri, setIndirectLaborItemsOri] = useState(
+    data.indirectLaborItems || []
+  );
+
+  const indirectLaborTotal = indirectLaborItems.reduce(
+    (sum, item) => sum + item.rateEstimated,
+    0
+  );
+  const indirectLaborTotalOri = indirectLaborItemsOri.reduce(
+    (sum, item) => sum + item.rateEstimated,
+    0
+  );
 
   const handleAddIndirectLaborItem = () => {
     const newItem = {
@@ -425,8 +453,8 @@ export default function EditRoutingProcessCardWIP({
           updated.workingDay > 0 ? updated.rateMonth / updated.workingDay : 0;
 
         // --- HITUNG RATE/HOURS ---
-        updated.rateHours =
-          updated.workingHours > 0 ? updated.rateDay / updated.workingHours : 0;
+        // updated.rateHours =
+        //   updated.workingHours > 0 ? updated.rateDay / updated.workingHours : 0;
 
         // --- HITUNG RATE-ESTIMATED ---
         const valid =
@@ -434,9 +462,8 @@ export default function EditRoutingProcessCardWIP({
           updated.workingHours > 0 &&
           updated.orderCompletion > 0;
 
-        updated.rateEstimated = valid
-          ? updated.qty * updated.rateHours * updated.orderCompletion
-          : updated.qty * updated.rateMonth;
+        updated.rateEstimated =
+          updated.qty * updated.rateHours * updated.orderCompletion;
 
         return updated;
       });
@@ -477,16 +504,11 @@ export default function EditRoutingProcessCardWIP({
     });
   };
 
-  useEffect(() => {
-    const total = indirectLaborItems.reduce(
-      (sum, item) => sum + item.rateEstimated,
-      0
-    );
-    setIndirectLaborTotal(total);
-  }, [indirectLaborItems]);
-
   // const [overheadItems, setOverheadItems] = useState([]);
   const [overheadItems, setOverheadItems] = useState(
+    data.indirectMaterialItems || []
+  );
+  const [overheadItemsOri, setOverheadItemsOri] = useState(
     data.indirectMaterialItems || []
   );
 
@@ -556,6 +578,10 @@ export default function EditRoutingProcessCardWIP({
   };
 
   const overheadTotal = overheadItems.reduce(
+    (sum, item) => sum + item.qty * item.price,
+    0
+  );
+  const overheadTotalOri = overheadItemsOri.reduce(
     (sum, item) => sum + item.qty * item.price,
     0
   );
@@ -646,6 +672,10 @@ export default function EditRoutingProcessCardWIP({
   };
 
   const laborTotal = laborItems.reduce(
+    (sum, item) => sum + item.rateEstimated,
+    0
+  );
+  const laborTotalOri = laborItemsOri.reduce(
     (sum, item) => sum + item.rateEstimated,
     0
   );
@@ -1212,7 +1242,7 @@ export default function EditRoutingProcessCardWIP({
                 Total Direct Labor Cost-Estimated:
               </p>
               <p className="text-xl font-bold text-green-700">
-                Rp {laborTotal.toLocaleString()}
+                Rp {laborTotalOri.toLocaleString()}
               </p>
             </div>
           </div>
@@ -1418,7 +1448,7 @@ export default function EditRoutingProcessCardWIP({
           <div className="flex justify-end pt-4">
             <div className="text-right">
               <p className="font-semibold text-gray-700">
-                Total Direct Labor Cost-Estimated:
+                Total Direct Labor Cost-Actual:
               </p>
               <p className="text-xl font-bold text-green-700">
                 Rp {laborTotal.toLocaleString()}
@@ -1430,7 +1460,7 @@ export default function EditRoutingProcessCardWIP({
         <h1 className="text-xl font-semibold text-gray-800">
           FACTORY OVERHEAD COST
         </h1>
-        {/* FACTORY OVERHEAD COST - INDIRECT MATERIAL */}
+        {/* FACTORY OVERHEAD COST - INDIRECT MATERIAL VIEW */}
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-6">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold uppercase text-gray-800">
@@ -1454,7 +1484,7 @@ export default function EditRoutingProcessCardWIP({
               </TableHeader>
 
               <TableBody>
-                {overheadItems.map((item, index) => (
+                {overheadItemsOri.map((item, index) => (
                   <TableRow key={item.id}>
                     <TableCell>{index + 1}</TableCell>
 
@@ -1544,13 +1574,131 @@ export default function EditRoutingProcessCardWIP({
                 Total Indirect Material Cost-Estimated:
               </p>
               <p className="text-xl font-bold text-green-700">
+                Rp {overheadTotalOri.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* FACTORY OVERHEAD COST - INDIRECT MATERIAL */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold uppercase text-gray-800">
+              Indirect Material
+            </h2>
+          </div>
+
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>No</TableHead>
+                  <TableHead>COA</TableHead>
+                  <TableHead>Item Name</TableHead>
+                  <TableHead>Desc</TableHead>
+                  <TableHead>QTY</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Total</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {overheadItems.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{index + 1}</TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.coa}
+                        onChange={(e) =>
+                          handleOverheadChange(item.id, "coa", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.name}
+                        onChange={(e) =>
+                          handleOverheadChange(item.id, "name", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.desc}
+                        onChange={(e) =>
+                          handleOverheadChange(item.id, "desc", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.qty}
+                        onChange={(e) =>
+                          handleOverheadChange(
+                            item.id,
+                            "qty",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        disabled
+                        value={item.unit}
+                        onChange={(e) =>
+                          handleOverheadChange(item.id, "unit", e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.price}
+                        onChange={(e) =>
+                          handleOverheadChange(
+                            item.id,
+                            "price",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      Rp {(item.qty * item.price).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* TOTAL OVERHEAD MATERIAL COST */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Indirect Material Cost-Actual:
+              </p>
+              <p className="text-xl font-bold text-green-700">
                 Rp {overheadTotal.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
 
-        {/* INDIRECT LABOR COST */}
+        {/* INDIRECT LABOR COST VIEW */}
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -1559,7 +1707,7 @@ export default function EditRoutingProcessCardWIP({
           </div>
 
           <div className="space-y-6">
-            {indirectLaborItems.map((item, index) => (
+            {indirectLaborItemsOri.map((item, index) => (
               <div
                 key={item.id}
                 className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
@@ -1760,13 +1908,238 @@ export default function EditRoutingProcessCardWIP({
                 Total Indirect Labor Cost-Estimated:
               </p>
               <p className="text-xl font-bold text-green-700">
+                Rp {indirectLaborTotalOri.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* INDIRECT LABOR COST */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">
+              INDIRECT LABOR COST
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            {indirectLaborItems.map((item, index) => (
+              <div
+                key={item.id}
+                className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
+              >
+                {/* HEADER + DELETE */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Indirect Item #{index + 1}
+                  </h3>
+                </div>
+
+                {/* --------------------- BARIS 1 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">COA</label>
+                    <Input
+                      disabled
+                      value={item.coa}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "coa",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Item Name</label>
+                    <Input
+                      disabled
+                      value={item.name}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Desc</label>
+                    <Input
+                      disabled
+                      value={item.desc}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "desc",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">QTY</label>
+                    <Input
+                      type="number"
+                      value={item.qty}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "qty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Unit</label>
+                    <Input
+                      disabled
+                      value={item.unit}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "unit",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Rate/Month or Total
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.rateMonth}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "rateMonth",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 2 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Working Day/Month
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.workingDay}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "workingDay",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Working Hours/Day
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.workingHours}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "workingHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Rate/Day</label>
+                    <p className="font-semibold">
+                      Rp {(item.rateDay ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Rate/Hours</label>
+                    {/* <p className="font-semibold">
+                      Rp {(item.rateHours ?? 0).toLocaleString()}
+                    </p> */}
+                    <Input
+                      type="number"
+                      value={item.rateHours}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "rateHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 3 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Order Completion Time (Hours)
+                    </label>
+                    <Input
+                      type="number"
+                      value={item.orderCompletion}
+                      onChange={(e) =>
+                        handleIndirectLaborChange(
+                          item.id,
+                          "orderCompletion",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 4 --------------------- */}
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium">Rate-Estimated</p>
+                  <p className="text-xl font-bold text-green-600">
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* TOTAL */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Indirect Labor Cost-Actual:
+              </p>
+              <p className="text-xl font-bold text-green-700">
                 Rp {indirectLaborTotal.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
 
-        {/* FACTORY PLANT / MACHINE / EQUIPMENT DEPRECIATION */}
+        {/* FACTORY PLANT / MACHINE / EQUIPMENT DEPRECIATION VIEW */}
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -1775,7 +2148,7 @@ export default function EditRoutingProcessCardWIP({
           </div>
 
           <div className="space-y-6">
-            {deprItems.map((item, index) => (
+            {deprItemsOri.map((item, index) => (
               <div
                 key={item.id}
                 className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
@@ -2032,13 +2405,294 @@ export default function EditRoutingProcessCardWIP({
                 Total Factory Plant/Machine/Equipment Depreciation-Estimated:
               </p>
               <p className="text-xl font-bold text-green-700">
-                Rp {deprTotal.toLocaleString()}
+                Rp {deprItemsTotalOri.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
 
-        {/* UTILITIES COST */}
+        {/* FACTORY PLANT / MACHINE / EQUIPMENT DEPRECIATION */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Factory Plant / Machine / Equipment Depreciation
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            {deprItems.map((item, index) => (
+              <div
+                key={item.id}
+                className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
+              >
+                {/* HEADER + DELETE */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Equipment #{index + 1}
+                  </h3>
+                </div>
+
+                {/* --------------------- BARIS 1 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">COA</label>
+                    <Input
+                      disabled
+                      value={item.coa}
+                      onChange={(e) =>
+                        handleDepreciationChange(item.id, "coa", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Item Name</label>
+                    <Input
+                      disabled
+                      value={item.name}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Desc</label>
+                    <Input
+                      disabled
+                      value={item.desc}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "desc",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">QTY</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.qty}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "qty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Unit</label>
+                    <Input
+                      disabled
+                      value={item.unit}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "unit",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Price</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.price}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "price",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Acc. Dep.</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.accDep}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "accDep",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* BOOK VALUE */}
+                <div className="pt-2">
+                  <label className="text-sm font-medium">Book Value</label>
+                  <p className="text-lg font-bold">
+                    Rp {(item.bookValue ?? 0).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* --------------------- BARIS 2 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Estimated Useful Life (Year)
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.usefulLife}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "usefulLife",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Operating Day/Month
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.operatingDay}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "operatingDay",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Operating Hours/Day
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.operatingHours}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "operatingHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Salvage Value</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.salvage}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "salvage",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Total Useful Life (Hours)
+                    </label>
+                    <p className="font-semibold">
+                      {(item.usefulLifeTotalHours ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Depreciation / Hours
+                    </label>
+                    <p className="font-semibold">
+                      Rp {(item.depreciationPerHour ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 3 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Order Completion Time (Hours)
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.orderCompletion}
+                      onChange={(e) =>
+                        handleDepreciationChange(
+                          item.id,
+                          "orderCompletion",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- BARIS 4 --------------------- */}
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium">Rate-Estimated</p>
+                  <Input
+                    value={item.rateEstimated ?? 0}
+                    type="number"
+                    onChange={(e) =>
+                      handleDepreciationChange(
+                        item.id,
+                        "rateEstimated",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="text-xl font-bold text-green-600"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* TOTAL */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Factory Plant/Machine/Equipment Depreciation-Actual:
+              </p>
+              <p className="text-xl font-bold text-green-700">
+                Rp {deprItemsTotal.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* UTILITIES COST VIEW */}
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -2047,7 +2701,7 @@ export default function EditRoutingProcessCardWIP({
           </div>
 
           <div className="space-y-6">
-            {utilitiesItems.map((item, index) => (
+            {utilitiesItemsOri.map((item, index) => (
               <div
                 key={item.id}
                 className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
@@ -2246,13 +2900,237 @@ export default function EditRoutingProcessCardWIP({
                 Total Utilities Cost-Estimated:
               </p>
               <p className="text-xl font-bold text-green-700">
+                Rp {utilitiesTotalOri.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* UTILITIES COST */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Utilities Cost
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            {utilitiesItems.map((item, index) => (
+              <div
+                key={item.id}
+                className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
+              >
+                {/* HEADER + DELETE */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Utility #{index + 1}
+                  </h3>
+                </div>
+
+                {/* --------------------- ROW 1 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">COA</label>
+                    <Input
+                      disabled
+                      value={item.coa}
+                      onChange={(e) =>
+                        handleUtilitiesChange(item.id, "coa", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Item Name</label>
+                    <Input
+                      disabled
+                      value={item.name}
+                      onChange={(e) =>
+                        handleUtilitiesChange(item.id, "name", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Desc</label>
+                    <Input
+                      disabled
+                      value={item.desc}
+                      onChange={(e) =>
+                        handleUtilitiesChange(item.id, "desc", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">QTY</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.qty}
+                      onChange={(e) =>
+                        handleUtilitiesChange(
+                          item.id,
+                          "qty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Unit</label>
+                    <Input
+                      disabled
+                      value={item.unit}
+                      onChange={(e) =>
+                        handleUtilitiesChange(item.id, "unit", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Price</label>
+                    <Input
+                      type="number"
+                      value={item.price}
+                      onChange={(e) =>
+                        handleUtilitiesChange(
+                          item.id,
+                          "price",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Total</label>
+                    <p className="font-semibold">
+                      Rp {(item.total ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* --------------------- ROW 2 (Utility Rate Info) --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium">Operating Day</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.operatingDay}
+                      onChange={(e) =>
+                        handleUtilitiesChange(
+                          item.id,
+                          "operatingDay",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Operating Hours/Day
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.operatingHours}
+                      onChange={(e) =>
+                        handleUtilitiesChange(
+                          item.id,
+                          "operatingHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Estimated Utility Rate / Day
+                    </label>
+                    <p className="font-semibold">
+                      Rp {(item.ratePerDay ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Estimated Utility Rate / Hours
+                    </label>
+                    <p className="font-semibold">
+                      Rp {(item.ratePerHour ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* --------------------- ROW 3 (Order Completion) --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Order Completion Time (Hours)
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.orderCompletion}
+                      onChange={(e) =>
+                        handleUtilitiesChange(
+                          item.id,
+                          "orderCompletion",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Estimated QTY</label>
+                    {/* <p className="font-semibold">
+                      {(item.estimatedQty ?? 0).toLocaleString()} {item.unit}
+                    </p> */}
+                    <Input
+                      type="number"
+                      value={item.estimatedQty}
+                      onChange={(e) =>
+                        handleUtilitiesChange(
+                          item.id,
+                          "estimatedQty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- RATE-ESTIMATED --------------------- */}
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium">Rate-Estimated</p>
+                  <p className="text-xl font-bold text-green-600">
+                    Rp {(item.rateEstimated ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* TOTAL UTILITIES */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Utilities Cost-Actual:
+              </p>
+              <p className="text-xl font-bold text-green-700">
                 Rp {utilitiesTotal.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
 
-        {/* OTHER FACTORY OVERHEAD COST */}
+        {/* OTHER FACTORY OVERHEAD COST VIEW */}
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-800">
@@ -2261,7 +3139,7 @@ export default function EditRoutingProcessCardWIP({
           </div>
 
           <div className="space-y-6">
-            {ofcItems.map((item, index) => (
+            {ofcItemsOri.map((item, index) => (
               <div
                 key={item.id}
                 className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
@@ -2461,6 +3339,231 @@ export default function EditRoutingProcessCardWIP({
                 Total Other Factory Overhead Cost-Estimated:
               </p>
               <p className="text-xl font-bold text-green-700">
+                Rp {ofcTotalOri.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* OTHER FACTORY OVERHEAD COST */}
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border mt-10">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Other Factory Overhead Cost
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            {ofcItems.map((item, index) => (
+              <div
+                key={item.id}
+                className="border rounded-xl p-5 bg-white shadow-sm space-y-5"
+              >
+                {/* HEADER + DELETE */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Overhead #{index + 1}
+                  </h3>
+                </div>
+
+                {/* --------------------- ROW 1 --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">COA</label>
+                    <Input
+                      disabled
+                      value={item.ofcCoa}
+                      onChange={(e) =>
+                        handleOfcChange(item.id, "ofcCoa", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Item Name</label>
+                    <Input
+                      disabled
+                      value={item.ofcName}
+                      onChange={(e) =>
+                        handleOfcChange(item.id, "ofcName", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Desc</label>
+                    <Input
+                      disabled
+                      value={item.ofcDesc}
+                      onChange={(e) =>
+                        handleOfcChange(item.id, "ofcDesc", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">QTY</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.ofcQty}
+                      onChange={(e) =>
+                        handleOfcChange(
+                          item.id,
+                          "ofcQty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Unit</label>
+                    <Input
+                      disabled
+                      value={item.ofcUnit}
+                      onChange={(e) =>
+                        handleOfcChange(item.id, "ofcUnit", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Price</label>
+                    <Input
+                      type="number"
+                      value={item.ofcPrice}
+                      onChange={(e) =>
+                        handleOfcChange(
+                          item.id,
+                          "ofcPrice",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Total</label>
+                    <p className="font-semibold">
+                      Rp {(item.ofcTotal ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* --------------------- ROW 2 (Operating Info) --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium">Operating Day</label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.ofcOperatingDay}
+                      onChange={(e) =>
+                        handleOfcChange(
+                          item.id,
+                          "ofcOperatingDay",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Operating Hours/Day
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.ofcOperatingHours}
+                      onChange={(e) =>
+                        handleOfcChange(
+                          item.id,
+                          "ofcOperatingHours",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Estimated Rate Capacity / Day
+                    </label>
+                    <p className="font-semibold">
+                      Rp {(item.ofcRatePerDay ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">
+                      Estimated Capacity / Hours
+                    </label>
+                    <p className="font-semibold">
+                      Rp {(item.ofcRatePerHour ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* --------------------- ROW 3 (Order Completion) --------------------- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <label className="text-sm font-medium">
+                      Order Completion Time (Hours)
+                    </label>
+                    <Input
+                      disabled
+                      type="number"
+                      value={item.ofcOrderTime}
+                      onChange={(e) =>
+                        handleOfcChange(
+                          item.id,
+                          "ofcOrderTime",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Estimated QTY</label>
+                    {/* <p className="font-semibold">
+                      {(item.ofcEstimatedQty ?? 0).toLocaleString()}{" "}
+                      {item.ofcUnit}
+                    </p> */}
+                    <Input
+                      type="number"
+                      value={item.ofcEstimatedQty}
+                      onChange={(e) =>
+                        handleOfcChange(
+                          item.id,
+                          "ofcEstimatedQty",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* --------------------- RATE-ESTIMATED --------------------- */}
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium">Rate-Estimated</p>
+                  <p className="text-xl font-bold text-green-600">
+                    Rp {(item.ofcRateEstimated ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* TOTAL OVERHEAD COST */}
+          <div className="flex justify-end pt-4">
+            <div className="text-right">
+              <p className="font-semibold text-gray-700">
+                Total Other Factory Overhead Cost-Actual:
+              </p>
+              <p className="text-xl font-bold text-green-700">
                 Rp {ofcTotal.toLocaleString()}
               </p>
             </div>
@@ -2470,3 +3573,4 @@ export default function EditRoutingProcessCardWIP({
     </Card>
   );
 }
+//
