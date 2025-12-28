@@ -4,12 +4,23 @@ import { toast } from "sonner";
 import SalesItemsForm from "../../components/sales/SalesItemsForm";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 import { FileText, Truck, Package, Quote } from "lucide-react";
 import { SalesTaxCalculation } from "@/components/sales/SalesTaxCalculation";
 import { CoaSelect } from "@/components/CoaSelect";
@@ -65,13 +76,21 @@ export default function CreateSalesInvoice() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [taxDetails, setTaxDetails] = useState<any>({ dpp: 0, ppn: 0, pph: 0, grandTotal: 0 });
+  const [taxDetails, setTaxDetails] = useState<any>({
+    dpp: 0,
+    ppn: 0,
+    pph: 0,
+    grandTotal: 0,
+  });
 
   const navigate = useNavigate();
 
   const handleInput = (e: any) => {
     const { name, value, type, files } = e.target;
-    setForm((prev: any) => ({ ...prev, [name]: type === "file" ? files[0] : value }));
+    setForm((prev: any) => ({
+      ...prev,
+      [name]: type === "file" ? files[0] : value,
+    }));
   };
 
   const setItems = (items: any) => setForm((prev: any) => ({ ...prev, items }));
@@ -92,7 +111,17 @@ export default function CreateSalesInvoice() {
 
   const handleTaxChange = (data: any) => {
     setTaxDetails(data);
-    setForm((p: any) => ({ ...p, tax_details: data, dpp: data.dpp, ppn: data.ppn, pph: data.pph, ppn_percentage: data.ppn_percentage, pph_type: data.pph_type, pph_percentage: data.pph_percentage, total: data.grandTotal }));
+    setForm((p: any) => ({
+      ...p,
+      tax_details: data,
+      dpp: data.dpp,
+      ppn: data.ppn,
+      pph: data.pph,
+      ppn_percentage: data.ppn_percentage,
+      pph_type: data.pph_type,
+      pph_percentage: data.pph_percentage,
+      total: data.grandTotal,
+    }));
   };
 
   const handleTaxMethodChange = (method: string) => {
@@ -100,7 +129,9 @@ export default function CreateSalesInvoice() {
   };
 
   const getAuthToken = () => {
-    const authDataRaw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
+    const authDataRaw = localStorage.getItem(
+      "sb-xwfkrjtqcqmmpclioakd-auth-token"
+    );
     if (!authDataRaw) throw new Error("No access token found in localStorage");
     const authData = JSON.parse(authDataRaw);
     const token = authData.access_token;
@@ -113,13 +144,19 @@ export default function CreateSalesInvoice() {
     setIsSubmitting(true);
     try {
       const subtotal = calculateTotal();
-      const additional = (Number(form.freight_out) || 0) + (Number(form.insurance) || 0);
+      const additional =
+        (Number(form.freight_out) || 0) + (Number(form.insurance) || 0);
       const subtotalWithAdditional = subtotal + additional;
 
       // derive tax fields (prefer values from taxDetails emitted by SalesTaxCalculation)
-      const ppnPercentage = Number(taxDetails.ppn_percentage || form.ppn_percentage) || 11;
-      const pphType = (taxDetails.pph_type || form.pph_type || "pph23") as string;
-      const pphPercentageFromDetails = Number(taxDetails.pph_percentage || form.pph_percentage || 0);
+      const ppnPercentage =
+        Number(taxDetails.ppn_percentage || form.ppn_percentage) || 11;
+      const pphType = (taxDetails.pph_type ||
+        form.pph_type ||
+        "pph23") as string;
+      const pphPercentageFromDetails = Number(
+        taxDetails.pph_percentage || form.pph_percentage || 0
+      );
 
       // determine DPP based on tax method
       const isTaxAfter = (form.tax_method || "") === "After Calculate";
@@ -138,21 +175,34 @@ export default function CreateSalesInvoice() {
       let pphComputed = 0;
       if (pphType === "pph23") {
         if (!isTaxAfter) {
-          pphComputed = Math.round(((subtotalWithAdditional + ppnComputed) / 1.11) * 0.02);
+          pphComputed = Math.round(
+            ((subtotalWithAdditional + ppnComputed) / 1.11) * 0.02
+          );
         } else {
-          pphComputed = Math.round(((subtotalWithAdditional + ppnComputed) / 1.011) * 0.02);
+          pphComputed = Math.round(
+            ((subtotalWithAdditional + ppnComputed) / 1.011) * 0.02
+          );
         }
       } else if (pphType === "pph22") {
-        if (dppComputed <= 500000000) pphComputed = Math.round(dppComputed * 0.01);
-        else if (dppComputed <= 10000000000) pphComputed = Math.round(dppComputed * 0.015);
+        if (dppComputed <= 500000000)
+          pphComputed = Math.round(dppComputed * 0.01);
+        else if (dppComputed <= 10000000000)
+          pphComputed = Math.round(dppComputed * 0.015);
         else pphComputed = Math.round(dppComputed * 0.025);
       } else {
         // custom
-        const parsed = parseFloat(String(pphPercentageFromDetails).replace(",", ".")) || 0;
+        const parsed =
+          parseFloat(String(pphPercentageFromDetails).replace(",", ".")) || 0;
         pphComputed = Math.round(dppComputed * (parsed / 100));
       }
 
-      const grandTotalComputed = isTaxAfter ? Math.round(dppComputed) + Math.round(ppnComputed) - Math.round(pphComputed) : Math.round(subtotalWithAdditional) + Math.round(ppnComputed) - Math.round(pphComputed);
+      const grandTotalComputed = isTaxAfter
+        ? Math.round(dppComputed) +
+          Math.round(ppnComputed) -
+          Math.round(pphComputed)
+        : Math.round(subtotalWithAdditional) +
+          Math.round(ppnComputed) -
+          Math.round(pphComputed);
 
       const formData = new FormData();
       formData.append("action", "addNewInvoice");
@@ -175,12 +225,30 @@ export default function CreateSalesInvoice() {
       formData.append("tags", `{${tagsValue}}`);
       formData.append("items", JSON.stringify(form.items || []));
       formData.append("tax_method", form.tax_method || "");
-      formData.append("ppn_percentage", String(form.ppn_percentage || taxDetails.ppn_percentage || 0));
-      formData.append("pph_type", String(form.pph_type || taxDetails.pph_type || ""));
-      formData.append("pph_percentage", String(form.pph_percentage || taxDetails.pph_percentage || 0));
-      formData.append("grand_total", String(taxDetails.grandTotal || grandTotalComputed || subtotalWithAdditional || 0));
+      formData.append(
+        "ppn_percentage",
+        String(form.ppn_percentage || taxDetails.ppn_percentage || 0)
+      );
+      formData.append(
+        "pph_type",
+        String(form.pph_type || taxDetails.pph_type || "")
+      );
+      formData.append(
+        "pph_percentage",
+        String(form.pph_percentage || taxDetails.pph_percentage || 0)
+      );
+      formData.append(
+        "grand_total",
+        String(
+          taxDetails.grandTotal ||
+            grandTotalComputed ||
+            subtotalWithAdditional ||
+            0
+        )
+      );
       formData.append("memo", form.memo || "");
-      if (form.attachment_url) formData.append("attachment_url", form.attachment_url);
+      if (form.attachment_url)
+        formData.append("attachment_url", form.attachment_url);
       // Send only the numeric suffix as `number` (exclude the INV- prefix)
       formData.append("number", form.number_suffix || "");
       formData.append("customer_name", form.customer_name || "");
@@ -190,11 +258,28 @@ export default function CreateSalesInvoice() {
       formData.append("freight_out", String(form.freight_out || 0));
       formData.append("insurance", String(form.insurance || 0));
       formData.append("customer_COA", form.customer_COA || "");
-      formData.append("dpp", String(form.dpp || taxDetails.dpp || Math.round(dppComputed) || 0));
-      formData.append("ppn", String(form.ppn || taxDetails.ppn || Math.round(ppnComputed) || 0));
-      formData.append("pph", String(form.pph || taxDetails.pph || Math.round(pphComputed) || 0));
+      formData.append(
+        "dpp",
+        String(form.dpp || taxDetails.dpp || Math.round(dppComputed) || 0)
+      );
+      formData.append(
+        "ppn",
+        String(form.ppn || taxDetails.ppn || Math.round(ppnComputed) || 0)
+      );
+      formData.append(
+        "pph",
+        String(form.pph || taxDetails.pph || Math.round(pphComputed) || 0)
+      );
       // total = Subtotal + Additional
-      formData.append("total", String(form.total || taxDetails.grandTotal || Math.round(subtotalWithAdditional) || 0));
+      formData.append(
+        "total",
+        String(
+          form.total ||
+            taxDetails.grandTotal ||
+            Math.round(subtotalWithAdditional) ||
+            0
+        )
+      );
 
       const token = getAuthToken();
       const res = await fetch("https://pbw-backend-api.vercel.app/api/sales", {
@@ -226,13 +311,18 @@ export default function CreateSalesInvoice() {
     <div className="flex h-screen w-full">
       <Sidebar />
       <div className="flex-1 overflow-auto">
-        <Header title="Create New Sales Invoice" description="Create a sales invoice" />
+        <Header
+          title="Create New Sales Invoice"
+          description="Create a sales invoice"
+        />
         <div className="p-6">
           <div className="max-w-6xl mx-auto">
             <form onSubmit={handleSubmit} className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium">Invoice Info</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Invoice Info
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <div>
@@ -258,10 +348,18 @@ export default function CreateSalesInvoice() {
                       >
                         <SelectTrigger>
                           <div className="flex items-center gap-2">
-                            {form.type === "Quotation" && <Quote className="h-4 w-4 text-cyan-500" />}
-                            {form.type === "Order" && <Package className="h-4 w-4 text-blue-500" />}
-                            {form.type === "Shipment" && <Truck className="h-4 w-4 text-orange-500" />}
-                            {form.type === "Invoice" && <FileText className="h-4 w-4 text-purple-500" />}
+                            {form.type === "Quotation" && (
+                              <Quote className="h-4 w-4 text-cyan-500" />
+                            )}
+                            {form.type === "Order" && (
+                              <Package className="h-4 w-4 text-blue-500" />
+                            )}
+                            {form.type === "Shipment" && (
+                              <Truck className="h-4 w-4 text-orange-500" />
+                            )}
+                            {form.type === "Invoice" && (
+                              <FileText className="h-4 w-4 text-purple-500" />
+                            )}
                             <span className="text-black-500">{form.type}</span>
                           </div>
                         </SelectTrigger>
@@ -297,35 +395,71 @@ export default function CreateSalesInvoice() {
                     <div className="mb-6">
                       <Label>Number</Label>
                       <div className="flex items-stretch">
-                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 bg-gray-50 text-sm h-10">INV-</span>
-                        <Input name="number_suffix" value={form.number_suffix} onChange={handleInput} placeholder="Enter transaction number" required className="rounded-l-none h-10" />
+                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 bg-gray-50 text-sm h-10">
+                          INV-
+                        </span>
+                        <Input
+                          name="number_suffix"
+                          value={form.number_suffix}
+                          onChange={handleInput}
+                          placeholder="Enter transaction number"
+                          required
+                          className="rounded-l-none h-10"
+                        />
                       </div>
                     </div>
 
                     <div className="mb-6">
                       <Label>Due Date</Label>
-                      <Input type="date" name="due_date" value={form.due_date} onChange={handleInput} />
+                      <Input
+                        type="date"
+                        name="due_date"
+                        value={form.due_date}
+                        onChange={handleInput}
+                      />
                     </div>
 
                     <div>
                       <Label>Tags (comma separated)</Label>
-                      <Input name="tags" value={form.tags} onChange={handleInput} placeholder="tag1, tag2, tag3" />
+                      <Input
+                        name="tags"
+                        value={form.tags}
+                        onChange={handleInput}
+                        placeholder="tag1, tag2, tag3"
+                      />
                     </div>
                   </div>
                   <div>
                     <div className="mb-6">
                       <Label>Invoice Date</Label>
-                      <Input type="date" name="invoice_date" value={form.invoice_date} onChange={handleInput} required />
+                      <Input
+                        type="date"
+                        name="invoice_date"
+                        value={form.invoice_date}
+                        onChange={handleInput}
+                        required
+                      />
                     </div>
 
                     <div className="mb-6">
                       <Label>Approver</Label>
-                      <Input name="approver" value={form.approver} onChange={handleInput} placeholder="Enter approver name" />
+                      <Input
+                        name="approver"
+                        value={form.approver}
+                        onChange={handleInput}
+                        placeholder="Enter approver name"
+                      />
                     </div>
 
                     <div>
                       <Label>Status</Label>
-                      <Input name="status" value={form.status} onChange={handleInput} disabled className="bg-gray-300 text-black cursor-not-allowed" />
+                      <Input
+                        name="status"
+                        value={form.status}
+                        onChange={handleInput}
+                        disabled
+                        className="bg-gray-300 text-black cursor-not-allowed"
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -333,101 +467,199 @@ export default function CreateSalesInvoice() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium">Customer Info</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Customer Info
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-3 gap-4">
                   <div className="space-y-4">
                     <Label>Customer Name</Label>
-                    <Input name="customer_name" value={form.customer_name} onChange={handleInput} required placeholder="Enter customer name" />
+                    <Input
+                      name="customer_name"
+                      value={form.customer_name}
+                      onChange={handleInput}
+                      required
+                      placeholder="Enter customer name"
+                    />
                   </div>
                   <div className="space-y-4">
                     <Label>Customer Address</Label>
-                    <Input name="customer_address" value={form.customer_address} onChange={handleInput} placeholder="Enter customer address" />
+                    <Input
+                      name="customer_address"
+                      value={form.customer_address}
+                      onChange={handleInput}
+                      placeholder="Enter customer address"
+                    />
                   </div>
                   <div className="space-y-4">
                     <Label>Customer Phone</Label>
-                    <Input name="customer_phone" value={form.customer_phone} onChange={handleInput} placeholder="Enter customer phone" />
+                    <Input
+                      name="customer_phone"
+                      value={form.customer_phone}
+                      onChange={handleInput}
+                      placeholder="Enter customer phone"
+                    />
                   </div>
 
                   <div className="space-y-4">
                     <Label>Terms & Conditions</Label>
-                    <Input name="terms" value={form.terms} onChange={handleInput} placeholder="Enter terms and conditions" />
+                    <Input
+                      name="terms"
+                      value={form.terms}
+                      onChange={handleInput}
+                      placeholder="Enter terms and conditions"
+                    />
                   </div>
 
                   <div className="space-y-4 col-span-2">
-                    <Label>Vendor COA</Label>
-                    <CoaSelect valueId={form.customer_COA_id} valueLabel={form.customer_COA} onSelect={(id, label) => setForm((p: any) => ({ ...p, customer_COA_id: id, customer_COA: label }))} placeholder="Select Vendor COA" />
+                    <Label>Customer COA</Label>
+                    <CoaSelect
+                      valueId={form.customer_COA_id}
+                      valueLabel={form.customer_COA}
+                      onSelect={(id, label) =>
+                        setForm((p: any) => ({
+                          ...p,
+                          customer_COA_id: id,
+                          customer_COA: label,
+                        }))
+                      }
+                      placeholder="Select Customer COA"
+                    />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium">Item Details</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Item Details
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SalesItemsForm items={form.items} setItems={setItems} showSku={true} showItemCoa={true} />
+                  <SalesItemsForm
+                    items={form.items}
+                    setItems={setItems}
+                    showSku={true}
+                    showItemCoa={true}
+                  />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium">Additional Costs</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Additional Costs
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Freight Out (Shipping)</Label>
-                    <Input type="number" name="freight_out" value={form.freight_out} onChange={handleInput} />
+                    <Input
+                      type="number"
+                      name="freight_out"
+                      value={form.freight_out}
+                      onChange={handleInput}
+                    />
                   </div>
                   <div>
                     <Label>Insurance</Label>
-                    <Input type="number" name="insurance" value={form.insurance} onChange={handleInput} />
+                    <Input
+                      type="number"
+                      name="insurance"
+                      value={form.insurance}
+                      onChange={handleInput}
+                    />
                   </div>
                   <div className="col-span-2 flex justify-end mt-2 text-sm text-muted-foreground">
                     <div>
                       <span>Total Additional Cost: </span>
-                      <span className="font-medium">Rp {((Number(form.freight_out) || 0) + (Number(form.insurance) || 0)).toLocaleString()}</span>
+                      <span className="font-medium">
+                        Rp{" "}
+                        {(
+                          (Number(form.freight_out) || 0) +
+                          (Number(form.insurance) || 0)
+                        ).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <div className="text-lg font-bold">Subtotal (Items - Return)</div>
-                  <div className="text-lg font-bold">Rp {calculateTotal().toLocaleString()}</div>
+                  <div className="text-lg font-bold">
+                    Subtotal (Items - Return)
+                  </div>
+                  <div className="text-lg font-bold">
+                    Rp {calculateTotal().toLocaleString()}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="text-lg font-bold">Subtotal + Additional</div>
-                  <div className="text-lg font-bold">Rp {(calculateTotal() + (Number(form.freight_out) || 0) + (Number(form.insurance) || 0)).toLocaleString()}</div>
+                  <div className="text-lg font-bold">
+                    Rp{" "}
+                    {(
+                      calculateTotal() +
+                      (Number(form.freight_out) || 0) +
+                      (Number(form.insurance) || 0)
+                    ).toLocaleString()}
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <SalesTaxCalculation subtotal={calculateTotal() + (Number(form.freight_out) || 0) + (Number(form.insurance) || 0)} onTaxChange={handleTaxChange} onTaxMethodChange={handleTaxMethodChange} />
+                <SalesTaxCalculation
+                  subtotal={
+                    calculateTotal() +
+                    (Number(form.freight_out) || 0) +
+                    (Number(form.insurance) || 0)
+                  }
+                  onTaxChange={handleTaxChange}
+                  onTaxMethodChange={handleTaxMethodChange}
+                />
               </div>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium">Additional Info</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Additional Info
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <div className="space-y-4">
                     <Label>Memo</Label>
-                    <Textarea name="memo" value={form.memo} onChange={handleInput} placeholder="Enter memo here..." />
+                    <Textarea
+                      name="memo"
+                      value={form.memo}
+                      onChange={handleInput}
+                      placeholder="Enter memo here..."
+                    />
                     <Label>Attachment (optional)</Label>
-                    <Input type="file" name="attachment_url" onChange={handleInput} />
+                    <Input
+                      type="file"
+                      name="attachment_url"
+                      onChange={handleInput}
+                    />
                   </div>
-                  <div className="flex flex-col items-end justify-end">{/* Grand Total moved outside card */}</div>
+                  <div className="flex flex-col items-end justify-end">
+                    {/* Grand Total moved outside card */}
+                  </div>
                 </CardContent>
               </Card>
 
               <div className="flex justify-between items-center">
                 <div className="text-lg font-bold">Grand Total</div>
-                <div className="text-lg font-bold">Rp {taxDetails.grandTotal.toLocaleString()}</div>
+                <div className="text-lg font-bold">
+                  Rp {taxDetails.grandTotal.toLocaleString()}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => navigate("/sales/invoices")}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={() => navigate("/sales/invoices")}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
