@@ -15,6 +15,7 @@ import { Pagination } from "@/components/Pagination";
 import { handleError } from "@/utils/errorHandler";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
 
 type BillingAction = "getBillingInvoice" | "getBillingOrder";
@@ -55,7 +56,20 @@ const getAuthToken = () => {
 };
 
 const BillingSummary = () => {
-  const [action, setAction] = useState<BillingAction>("getBillingInvoice");
+  const location = useLocation();
+  const navigate = useNavigate();
+  // support initializing tab via query param `?tab=order|invoice` or location.state.tab
+  const getInitialAction = (): BillingAction => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const tab = (params.get("tab") || (location.state && (location.state as any).tab) || "invoice").toString();
+      return tab === "order" ? "getBillingOrder" : "getBillingInvoice";
+    } catch (_e) {
+      return "getBillingInvoice";
+    }
+  };
+
+  const [action, setAction] = useState<BillingAction>(getInitialAction);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
@@ -182,9 +196,16 @@ const BillingSummary = () => {
   };
 
   useEffect(() => {
+    // If location search or state changes (external navigation), update `action` accordingly
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab") || (location.state && (location.state as any).tab);
+    if (tab) {
+      const nextAction = tab === "order" ? "getBillingOrder" : "getBillingInvoice";
+      if (nextAction !== action) setAction(nextAction);
+    }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action, page, limit]);
+  }, [action, page, limit, location.search, (location.state as any)?.tab]);
 
   return (
     <div className="flex h-screen w-full">
@@ -207,6 +228,12 @@ const BillingSummary = () => {
                   const next = viewToAction[v as BillingView];
                   setAction(next);
                   setPage(1);
+                  // update query string so location.search matches selection and doesn't override
+                  try {
+                    navigate(`${location.pathname}?tab=${v}`, { replace: true });
+                  } catch (_e) {
+                    /* ignore */
+                  }
                 }}
               >
                 <TabsList>
@@ -222,6 +249,11 @@ const BillingSummary = () => {
                 onValueChange={(val: BillingAction) => {
                   setAction(val);
                   setPage(1);
+                  try {
+                    navigate(`${location.pathname}?tab=${actionToView[val]}`, { replace: true });
+                  } catch (_e) {
+                    /* ignore */
+                  }
                 }}
               >
                 <SelectTrigger>

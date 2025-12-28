@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PurchaseType, PurchaseItem } from "@/types/purchase";
 import { PurchaseInformationForm } from "@/components/purchases/PurchaseInformationForm";
 import { PurchaseItemsForm } from "@/components/purchases/PurchaseItemsForm";
@@ -7,27 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { sub } from "date-fns";
 import { after } from "node:test";
@@ -42,30 +26,14 @@ interface CreatePurchaseFormProps {
   submitLabel?: string;
 }
 
-export function CreatePurchaseForm({
-  purchaseType,
-  setPurchaseType,
-  onSubmit,
-  isLoading = false,
-  isReadOnlyTypeAndNumber = false,
-  initialData,
-  submitLabel,
-}: CreatePurchaseFormProps) {
+export function CreatePurchaseForm({ purchaseType, setPurchaseType, onSubmit, isLoading = false, isReadOnlyTypeAndNumber = false, initialData, submitLabel }: CreatePurchaseFormProps) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [dueDate, setDueDate] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
-  const [number, setNumber] = useState(
-    purchaseType === "quotation" ? `QUO-` : `INV-`
-  );
+  const [dueDate, setDueDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+  const [number, setNumber] = useState(purchaseType === "quotation" ? `QUO-` : `INV-`);
   const [approver, setApprover] = useState("");
-  const [status, setStatus] = useState<
-    "pending" | "completed" | "cancelled" | "Half-paid"
-  >("pending");
+  const [status, setStatus] = useState<"pending" | "completed" | "cancelled" | "Half-paid">("pending");
   const [tags, setTags] = useState("");
-  const [discountModeByItem, setDiscountModeByItem] = useState<
-    Record<string, "percent" | "nominal">
-  >({});
+  const [discountModeByItem, setDiscountModeByItem] = useState<Record<string, "percent" | "nominal">>({});
   const [items, setItems] = useState<PurchaseItem[]>([
     {
       id: Math.random().toString(36).substr(2, 9),
@@ -87,16 +55,12 @@ export function CreatePurchaseForm({
 
   const [openCoaForItemId, setOpenCoaForItemId] = useState<string | null>(null);
   const [coaSearch, setCoaSearch] = useState<string>("");
-  const [coaOptions, setCoaOptions] = useState<
-    Array<{ id: string; label: string }>
-  >([]);
+  const [coaOptions, setCoaOptions] = useState<Array<{ id: string; label: string }>>([]);
   const [isLoadingCoa, setIsLoadingCoa] = useState<boolean>(false);
 
   // Helper function to get auth token
   const getAuthToken = () => {
-    const authDataRaw = localStorage.getItem(
-      "sb-xwfkrjtqcqmmpclioakd-auth-token"
-    );
+    const authDataRaw = localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token");
     if (!authDataRaw) {
       throw new Error("No access token found in localStorage");
     }
@@ -117,25 +81,17 @@ export function CreatePurchaseForm({
       try {
         const token = getAuthToken();
         const q = encodeURIComponent(coaSearch || "");
-        const resp = await fetch(
-          `https://pbw-backend-api.vercel.app/api/dashboard?action=getAccountCOA&search=${q}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const resp = await fetch(`https://pbw-backend-api.vercel.app/api/dashboard?action=getAccountCOA&search=${q}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (abort) return;
         const json = await resp.json();
-        const list = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-          ? json
-          : [];
+        const list = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
         const mapped = list.map((x: any, idx: number) => {
           const id = String(x.id || x.code || x.account_code || idx);
-          const name =
-            x.name || x.account_name || x.label || x.title || "Account";
+          const name = x.name || x.account_name || x.label || x.title || "Account";
           const code = x.code || x.account_code || "";
           const label = code ? `${code} - ${name}` : name;
           return { id, label };
@@ -173,9 +129,7 @@ export function CreatePurchaseForm({
 
   // Tax calculation states
   const [isTaxAfter, setIsTaxAfter] = useState(false);
-  const [selectedPph, setSelectedPph] = useState<"pph22" | "pph23" | "custom">(
-    "custom"
-  );
+  const [selectedPph, setSelectedPph] = useState<"pph22" | "pph23" | "custom">("custom");
   const [customTaxRate, setCustomTaxRate] = useState<string>("0");
   const [ppnRate, setPpnRate] = useState<"11" | "12">("11");
 
@@ -198,21 +152,15 @@ export function CreatePurchaseForm({
   // Shipment-specific fields
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("");
-  const [shippingDate, setShippingDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [shippingDate, setShippingDate] = useState(new Date().toISOString().split("T")[0]);
 
   // Quotation-specific fields
   const [vendorName, setVendorName] = useState("");
   const [vendorAddress, setVendorAddress] = useState("");
   const [vendorPhone, setVendorPhone] = useState("");
 
-  const [startDate, setStartDate] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
-  const [validUntil, setValidUntil] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
+  const [startDate, setStartDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+  const [validUntil, setValidUntil] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
   const [terms, setTerms] = useState("");
 
   const [memo, setMemo] = useState("");
@@ -277,13 +225,9 @@ export function CreatePurchaseForm({
     const dpp = calculateDpp();
     if (selectedPph === "pph23") {
       if (!isTaxAfter) {
-        return Math.round(
-          ((subtotalWithCosts + calculatePpn()) / 1.11) * 0.0265
-        );
+        return Math.round(((subtotalWithCosts + calculatePpn()) / 1.11) * 0.0265);
       } else {
-        return Math.round(
-          ((subtotalWithCosts + calculatePpn()) / 1.011) * 0.0265
-        );
+        return Math.round(((subtotalWithCosts + calculatePpn()) / 1.011) * 0.0265);
       }
     } else if (selectedPph === "pph22") {
       if (dpp <= 500000000) return dpp * 0.01;
@@ -319,10 +263,7 @@ export function CreatePurchaseForm({
   };
 
   // helper id unik
-  const uid = () =>
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : Math.random().toString(36).slice(2);
+  const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 
   // normalisasi array items dari backend ke shape form + id unik
   const normalizeItemsFromApi = (raw: any[] = []) => {
@@ -331,11 +272,7 @@ export function CreatePurchaseForm({
       const isRupiah = it.disc_item_type === "rupiah";
 
       return {
-        id:
-          it.id ??
-          (typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : Math.random().toString(36).slice(2)),
+        id: it.id ?? (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2)),
 
         name: it.item_name ?? it.name ?? "",
         quantity: it.qty ?? it.quantity ?? 1,
@@ -355,14 +292,8 @@ export function CreatePurchaseForm({
     });
   };
 
-  const handleItemChange = (
-    id: string,
-    field: keyof PurchaseItem,
-    value: any
-  ) => {
-    setItems(
-      items.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
+  const handleItemChange = (id: string, field: keyof PurchaseItem, value: any) => {
+    setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -385,12 +316,7 @@ export function CreatePurchaseForm({
       number,
       taxCalculationMethod: isTaxAfter,
       ppnPercentage: ppnRate === "11" ? 11 : 12,
-      pphPercentage:
-        selectedPph === "custom"
-          ? parseFloat(customTaxRate.replace(",", "."))
-          : selectedPph === "pph22"
-          ? 1
-          : 2,
+      pphPercentage: selectedPph === "custom" ? parseFloat(customTaxRate.replace(",", ".")) : selectedPph === "pph22" ? 1 : 2,
       pphType: selectedPph,
       grandTotal: calculateGrandTotal(),
       subtotal: calculateSubtotal(),
@@ -478,13 +404,7 @@ export function CreatePurchaseForm({
       // ⚠️ khusus REQUEST – ini yang sebelumnya tidak di-set
       setRequestedBy(initialData.requested_by || initialData.requestedBy || "");
       setUrgency(initialData.urgency || "Medium");
-      setInstallmentAmount(
-        (
-          initialData.installment_amount ??
-          initialData.installmentAmount ??
-          0
-        ).toString()
-      );
+      setInstallmentAmount((initialData.installment_amount ?? initialData.installmentAmount ?? 0).toString());
 
       setTerms(initialData.terms || "");
       setMemo(initialData.memo || "");
@@ -507,9 +427,7 @@ export function CreatePurchaseForm({
 
       // pajak
       setIsTaxAfter(initialData.tax_method === "After Calculate");
-      setPpnRate(
-        String(initialData.ppn_percentage ?? 11) === "12" ? "12" : "11"
-      );
+      setPpnRate(String(initialData.ppn_percentage ?? 11) === "12" ? "12" : "11");
 
       if (initialData.pph_type === "22") setSelectedPph("pph22");
       else if (initialData.pph_type === "23") setSelectedPph("pph23");
@@ -518,11 +436,7 @@ export function CreatePurchaseForm({
       setCustomTaxRate(String(initialData.pph_percentage ?? 0));
 
       // tags bisa array/string
-      setTags(
-        Array.isArray(initialData.tags)
-          ? initialData.tags.join(",")
-          : initialData.tags || ""
-      );
+      setTags(Array.isArray(initialData.tags) ? initialData.tags.join(",") : initialData.tags || "");
 
       // tanggal khusus quotation (kalau ada)
       if (initialData.start_date) setStartDate(initialData.start_date);
@@ -530,23 +444,15 @@ export function CreatePurchaseForm({
 
       // 🧭 Tambahan khusus untuk Shipment
       if (purchaseType === "shipment") {
-        setTrackingNumber(
-          initialData.tracking_number || initialData.trackingNumber || ""
-        );
+        setTrackingNumber(initialData.tracking_number || initialData.trackingNumber || "");
         setCarrier(initialData.carrier || initialData.carrierName || "");
-        setShippingDate(
-          initialData.shipping_date || initialData.shippingDate || ""
-        );
+        setShippingDate(initialData.shipping_date || initialData.shippingDate || "");
       }
 
       if (purchaseType === "invoice") {
         setApprover(initialData.approver || "");
-        setVendorCoaAccountId(
-          initialData.vendor_COA || initialData.vendor_coa || ""
-        );
-        setVendorCoaLabel(
-          initialData.vendor_COA || initialData.vendor_coa || ""
-        );
+        setVendorCoaAccountId(initialData.vendor_COA || initialData.vendor_coa || "");
+        setVendorCoaLabel(initialData.vendor_COA || initialData.vendor_coa || "");
         setFreightIn(initialData.freight_in || 0);
         setInsuranceCost(initialData.insurance || 0);
         setTerms(initialData.terms || "");
@@ -556,6 +462,8 @@ export function CreatePurchaseForm({
       setAttachmentFiles([]);
     }
   }, [initialData]);
+
+  const navigate = useNavigate();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 overflow-auto h-[80vh]">
@@ -578,44 +486,21 @@ export function CreatePurchaseForm({
       />
 
       {/* Quotation-specific fields */}
-      {(purchaseType === "quotation" ||
-        purchaseType === "request" ||
-        purchaseType === "shipment" ||
-        purchaseType === "invoice") && (
+      {(purchaseType === "quotation" || purchaseType === "request" || purchaseType === "shipment" || purchaseType === "invoice") && (
         <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-          <h3 className="font-medium text-gray-900">
-            Vendor & Quotation Details
-          </h3>
+          <h3 className="font-medium text-gray-900">Vendor & Quotation Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vendorName">Vendor Name</Label>
-              <Input
-                id="vendorName"
-                value={vendorName}
-                onChange={(e) => setVendorName(e.target.value)}
-                placeholder="Enter vendor name"
-                required
-              />
+              <Input id="vendorName" value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Enter vendor name" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vendorAddress">Vendor Address</Label>
-              <Input
-                id="vendorAddress"
-                value={vendorAddress}
-                onChange={(e) => setVendorAddress(e.target.value)}
-                placeholder="Enter vendor address"
-                required
-              />
+              <Input id="vendorAddress" value={vendorAddress} onChange={(e) => setVendorAddress(e.target.value)} placeholder="Enter vendor address" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vendorPhone">Vendor Phone</Label>
-              <Input
-                id="vendorPhone"
-                value={vendorPhone}
-                onChange={(e) => setVendorPhone(e.target.value)}
-                placeholder="Enter vendor phone"
-                required
-              />
+              <Input id="vendorPhone" value={vendorPhone} onChange={(e) => setVendorPhone(e.target.value)} placeholder="Enter vendor phone" required />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -624,23 +509,11 @@ export function CreatePurchaseForm({
               <>
                 <div className="space-y-2">
                   <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
+                  <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="validUntil">Valid Until</Label>
-                  <Input
-                    id="validUntil"
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    required
-                  />
+                  <Input id="validUntil" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} required />
                 </div>
               </>
             )}
@@ -649,13 +522,7 @@ export function CreatePurchaseForm({
             {(purchaseType === "invoice" || purchaseType === "quotation") && (
               <div className="space-y-2">
                 <Label htmlFor="terms">Terms & Conditions</Label>
-                <Input
-                  id="terms"
-                  value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                  placeholder="Enter terms and conditions"
-                  required
-                />
+                <Input id="terms" value={terms} onChange={(e) => setTerms(e.target.value)} placeholder="Enter terms and conditions" required />
               </div>
             )}
 
@@ -709,27 +576,15 @@ export function CreatePurchaseForm({
 
                 <Popover open={openVendorCoa} onOpenChange={setOpenVendorCoa}>
                   <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start"
-                    >
+                    <Button type="button" variant="outline" className="w-full justify-start">
                       {vendorCoaLabel || "Select vendor account"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="p-0 w-[320px]">
                     <Command>
-                      <CommandInput
-                        placeholder="Search account..."
-                        value={coaSearch}
-                        onValueChange={(v) => setCoaSearch(v)}
-                      />
+                      <CommandInput placeholder="Search account..." value={coaSearch} onValueChange={(v) => setCoaSearch(v)} />
                       <CommandList>
-                        <CommandEmpty>
-                          {isLoadingVendorCoa
-                            ? "Loading..."
-                            : "No results found."}
-                        </CommandEmpty>
+                        <CommandEmpty>{isLoadingVendorCoa ? "Loading..." : "No results found."}</CommandEmpty>
                         <CommandGroup>
                           {vendorCoaOptions.map((opt) => (
                             <CommandItem
@@ -763,23 +618,11 @@ export function CreatePurchaseForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="requestedBy">Requested By</Label>
-              <Input
-                id="requestedBy"
-                value={requestedBy}
-                onChange={(e) => setRequestedBy(e.target.value)}
-                placeholder="Enter requester name"
-                required
-              />
+              <Input id="requestedBy" value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} placeholder="Enter requester name" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="urgency">Urgency Level</Label>
-              <Select
-                value={urgency}
-                onValueChange={(value: "High" | "Medium" | "Low") =>
-                  setUrgency(value)
-                }
-                required
-              >
+              <Select value={urgency} onValueChange={(value: "High" | "Medium" | "Low") => setUrgency(value)} required>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -793,14 +636,7 @@ export function CreatePurchaseForm({
 
             <div className="space-y-2">
               <Label htmlFor="installmentAmount">Installment Amount</Label>
-              <Input
-                id="installmentAmount"
-                type="number"
-                min="0"
-                value={installmentAmount}
-                onChange={(e) => setInstallmentAmount(e.target.value)}
-                placeholder="Enter installment amount if needed "
-              />
+              <Input id="installmentAmount" type="number" min="0" value={installmentAmount} onChange={(e) => setInstallmentAmount(e.target.value)} placeholder="Enter installment amount if needed " />
             </div>
           </div>
         </div>
@@ -856,33 +692,15 @@ export function CreatePurchaseForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="trackingNumber">Tracking Number</Label>
-              <Input
-                id="trackingNumber"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="Enter tracking number"
-                required
-              />
+              <Input id="trackingNumber" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Enter tracking number" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="carrier">Carrier</Label>
-              <Input
-                id="carrier"
-                value={carrier}
-                onChange={(e) => setCarrier(e.target.value)}
-                placeholder="Enter carrier name"
-                required
-              />
+              <Input id="carrier" value={carrier} onChange={(e) => setCarrier(e.target.value)} placeholder="Enter carrier name" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="shippingDate">Shipping Date</Label>
-              <Input
-                id="shippingDate"
-                type="date"
-                value={shippingDate}
-                onChange={(e) => setShippingDate(e.target.value)}
-                required
-              />
+              <Input id="shippingDate" type="date" value={shippingDate} onChange={(e) => setShippingDate(e.target.value)} required />
             </div>
           </div>
         </div>
@@ -960,9 +778,7 @@ export function CreatePurchaseForm({
           <div className="flex justify-end mt-4">
             <div className="text-right text-sm text-muted-foreground">
               <span>Total Additional Cost: </span>
-              <span className="font-medium">
-                {formatCurrency(calculateAdditionalCosts())}
-              </span>
+              <span className="font-medium">{formatCurrency(calculateAdditionalCosts())}</span>
             </div>
           </div>
         </div>
@@ -974,23 +790,15 @@ export function CreatePurchaseForm({
           <div className="space-y-2">
             {(purchaseType === "invoice" || purchaseType === "shipment") && (
               <div className="flex justify-between items-center">
-                <Label className="text-lg font-semibold">
-                  Subtotal (Items - Retur)
-                </Label>
-                <div className="text-lg font-bold">
-                  {formatCurrency(calculateSubtotal())}
-                </div>
+                <Label className="text-lg font-semibold">Subtotal (Items - Retur)</Label>
+                <div className="text-lg font-bold">{formatCurrency(calculateSubtotal())}</div>
               </div>
             )}
 
             {purchaseType === "invoice" && (
               <div className="flex justify-between items-center">
-                <Label className="text-lg font-semibold">
-                  Subtotal + Additional Costs
-                </Label>
-                <div className="text-xl font-bold">
-                  {formatCurrency(calculateSubtotalWithCosts())}
-                </div>
+                <Label className="text-lg font-semibold">Subtotal + Additional Costs</Label>
+                <div className="text-xl font-bold">{formatCurrency(calculateSubtotalWithCosts())}</div>
               </div>
             )}
           </div>
@@ -998,9 +806,7 @@ export function CreatePurchaseForm({
       )}
 
       {/* Tax Calculation Section */}
-      {(purchaseType === "invoice" ||
-        purchaseType === "shipment" ||
-        purchaseType === "request") && (
+      {(purchaseType === "invoice" || purchaseType === "shipment" || purchaseType === "request") && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-lg font-medium mb-4">Tax Calculation</h2>
 
@@ -1014,14 +820,8 @@ export function CreatePurchaseForm({
                 onChange={(e) => setIsTaxAfter(e.target.checked)}
                 className="rounded border-gray-300"
               /> */}
-              <Switch
-                id="tax-method"
-                checked={isTaxAfter}
-                onCheckedChange={setIsTaxAfter}
-              />
-              <Label htmlFor="tax-method">
-                {isTaxAfter ? "After Tax" : "Before Tax"}
-              </Label>
+              <Switch id="tax-method" checked={isTaxAfter} onCheckedChange={setIsTaxAfter} />
+              <Label htmlFor="tax-method">{isTaxAfter ? "After Tax" : "Before Tax"}</Label>
             </div>
           </div>
 
@@ -1033,10 +833,7 @@ export function CreatePurchaseForm({
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Label>PPN (VAT)</Label>
             <div className="flex gap-2">
-              <Select
-                value={ppnRate}
-                onValueChange={(value: "11" | "12") => setPpnRate(value)}
-              >
+              <Select value={ppnRate} onValueChange={(value: "11" | "12") => setPpnRate(value)}>
                 <SelectTrigger className="w-20">
                   <SelectValue />
                 </SelectTrigger>
@@ -1045,21 +842,14 @@ export function CreatePurchaseForm({
                   <SelectItem value="12">12%</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="flex-1 text-right">
-                {formatCurrency(calculatePpn())}
-              </div>
+              <div className="flex-1 text-right">{formatCurrency(calculatePpn())}</div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Label>PPh</Label>
             <div className="space-y-2">
-              <Select
-                value={selectedPph}
-                onValueChange={(value: "pph22" | "pph23" | "custom") =>
-                  setSelectedPph(value)
-                }
-              >
+              <Select value={selectedPph} onValueChange={(value: "pph22" | "pph23" | "custom") => setSelectedPph(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1091,31 +881,17 @@ export function CreatePurchaseForm({
       )}
 
       {/* File upload for invoice, shipment, order, offer, request, quotation */}
-      {(purchaseType === "invoice" ||
-        purchaseType === "shipment" ||
-        purchaseType === "order" ||
-        purchaseType === "offer" ||
-        purchaseType === "request" ||
-        purchaseType === "quotation") && (
+      {(purchaseType === "invoice" || purchaseType === "shipment" || purchaseType === "order" || purchaseType === "offer" || purchaseType === "request" || purchaseType === "quotation") && (
         <div className="bg-white p-4 rounded-lg space-y-4">
           {/* Memo Input */}
           <div className="space-y-2">
             <Label htmlFor="memo">Memo</Label>
-            <Textarea
-              id="memo"
-              placeholder="Enter memo here..."
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              className="min-h-[100px]"
-            />
+            <Textarea id="memo" placeholder="Enter memo here..." value={memo} onChange={(e) => setMemo(e.target.value)} className="min-h-[100px]" />
           </div>
 
           <h3 className="font-medium text-gray-900">Attachment</h3>
           <div className="space-y-2">
-            <Label
-              htmlFor="attachment"
-              className="text-sm font-medium text-gray-700"
-            >
+            <Label htmlFor="attachment" className="text-sm font-medium text-gray-700">
               Upload File (Optional)
             </Label>
             <Input
@@ -1147,21 +923,34 @@ export function CreatePurchaseForm({
         <div className="flex justify-between items-center">
           <Label className="text-lg font-semibold">Grand Total</Label>
           <div className="text-xl font-bold">
-            {purchaseType === "quotation" ? (
-              <div className="text-xl font-bold">
-                {formatCurrency(calculateSubtotalWithCosts())}
-              </div>
-            ) : (
-              <div className="text-xl font-bold">
-                {formatCurrency(calculateGrandTotal())}
-              </div>
-            )}
+            {purchaseType === "quotation" ? <div className="text-xl font-bold">{formatCurrency(calculateSubtotalWithCosts())}</div> : <div className="text-xl font-bold">{formatCurrency(calculateGrandTotal())}</div>}
           </div>
         </div>
       </div>
 
       <div className="flex justify-end gap-4 pt-6">
-        <Button type="button" variant="outline" disabled={isLoading}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isLoading}
+          onClick={() => {
+            const map: Record<string, string> = {
+              invoice: "/purchases/invoices",
+              shipment: "/purchases/shipments",
+              order: "/purchases/orders",
+              offer: "/purchases/offers",
+              request: "/purchases/requests",
+              quotation: "/purchases/quotations",
+            };
+            // navigate to the matching purchases listing
+            try {
+              const nav = map[purchaseType] || "/purchases";
+              navigate(nav);
+            } catch (e) {
+              // fallback: no-op
+            }
+          }}
+        >
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>

@@ -159,7 +159,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className="w-56 h-screen bg-sidebar-bg flex flex-col sticky left-0 top-0 overflow-auto hide-scrollbar">
+    <div className="w-56 h-full bg-sidebar-bg flex flex-col sticky left-0 top-0 overflow-auto hide-scrollbar">
       {/* User info section */}
       {user && (
         <div className="p-4">
@@ -241,26 +241,6 @@ export const Sidebar = () => {
         </button>
         <SubMenu isOpen={isSalesOpen}>
           <Link
-            to="/sales/delivery"
-            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/sales/delivery")
-                ? "bg-sidebar-active/20 text-sidebar-active"
-                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
-            }`}
-          >
-            Sales Invoices
-          </Link>
-          <Link
-            to="/sales/order"
-            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
-              currentPath.startsWith("/sales/order")
-                ? "bg-sidebar-active/20 text-sidebar-active"
-                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
-            }`}
-          >
-            Order & Delivery
-          </Link>
-          <Link
             to="/sales/quotation"
             className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
               currentPath.startsWith("/sales/quotation")
@@ -269,6 +249,66 @@ export const Sidebar = () => {
             }`}
           >
             Quotation
+          </Link>
+          <Link
+            to="/sales/offers"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/sales/offers")
+                ? "bg-sidebar-active/20 text-sidebar-active"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Offers
+          </Link>
+          <Link
+            to="/sales/orders"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/sales/orders")
+                ? "bg-sidebar-active/20 text-sidebar-active"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Orders
+          </Link>
+          <Link
+            to="/sales/shipments"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/sales/shipments")
+                ? "bg-sidebar-active/20 text-sidebar-active"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Shipments
+          </Link>
+          <Link
+            to="/sales/invoices"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/sales/invoices")
+                ? "bg-sidebar-active/20 text-sidebar-active"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Invoices
+          </Link>
+          <Link
+            to="/sales/billing-summary"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/sales/billing-summary")
+                ? "bg-sidebar-active/20 text-sidebar-active"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Billing Summary
+          </Link>
+          <Link
+            to="/sales/approval"
+            className={`block mx-4 rounded-[14px] px-4 py-1.5 text-sm transition-colors duration-200 ${
+              currentPath.startsWith("/sales/approval")
+                ? "bg-sidebar-active/20 text-sidebar-active"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accentForeground"
+            }`}
+          >
+            Approval
           </Link>
         </SubMenu>
 

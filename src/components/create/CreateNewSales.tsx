@@ -4,37 +4,15 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import {
-  Truck,
-  User,
-  Calendar,
-  CreditCard,
-  Package,
-  Tag,
-  MapPin,
-  FileText,
-  Clock,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
+import { Truck, User, Calendar, CreditCard, Package, Tag, MapPin, FileText, Clock, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import CustomerInfoSection from "@/components/sales/CustomerInfoSection";
 import SalesItemsSection from "@/components/sales/SalesItemsSection";
 import { SalesTaxCalculation } from "@/components/sales/SalesTaxCalculation";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
 import { useCreateSale } from "@/hooks/useSales";
-import {
-  useCreateOrderDelivery,
-  useCreateQuotation,
-} from "@/hooks/useSalesData";
+import { useCreateOrderDelivery, useCreateQuotation } from "@/hooks/useSalesData";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 interface SalesItemType {
@@ -170,7 +148,10 @@ const paymentMethods = [
 const CreateNewSales = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { type = "delivery" } = (location.state as LocationState) || {};
+  const stateType = (location.state as LocationState)?.type;
+  const searchParams = new URLSearchParams(location.search);
+  const queryType = (searchParams.get("type") as LocationState["type"]) || null;
+  const type = stateType || queryType || "delivery";
   const { user } = useAuth();
 
   // Mutation hooks
@@ -182,16 +163,8 @@ const CreateNewSales = () => {
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [status, setStatus] = useState(
-    type === "order"
-      ? "pending_payment"
-      : type === "quotation"
-      ? "sent"
-      : "unpaid"
-  );
-  const [items, setItems] = useState<SalesItemType[]>([
-    { id: "1", name: "", quantity: 1, price: 0, discount: 0 },
-  ]);
+  const [status, setStatus] = useState(type === "order" ? "pending_payment" : type === "quotation" ? "Pending" : "unpaid");
+  const [items, setItems] = useState<SalesItemType[]>([{ id: "1", name: "", quantity: 1, price: 0, discount: 0 }]);
 
   // For Order & Delivery specific fields
   const [customerPhone, setCustomerPhone] = useState("");
@@ -200,6 +173,7 @@ const CreateNewSales = () => {
   const [shippingMethod, setShippingMethod] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
+  const [urgencyLevel, setUrgencyLevel] = useState<"Low" | "Medium" | "High">("Medium");
   const [notes, setNotes] = useState("");
 
   // For Quotation specific fields
@@ -219,12 +193,18 @@ const CreateNewSales = () => {
   // Get page title based on type
   const getPageTitle = () => {
     switch (type) {
+      case "invoice":
+        return "Create New Invoice";
+      case "shipment":
+        return "Create New Shipment";
+      case "quotation":
+        return "Create New Sales Quotation";
+      case "offer":
+        return "Create New Offer";
+      case "order":
+        return "Create New Order";
       case "delivery":
         return "Create Sales Invoice";
-      case "order":
-        return "Create Order & Delivery";
-      case "quotation":
-        return "Create Quotation";
       default:
         return "Create New Sales";
     }
@@ -239,7 +219,7 @@ const CreateNewSales = () => {
     if (type === "order") {
       generatedNumber = `${timestamp}${randomNum}`;
     } else if (type === "quotation") {
-      generatedNumber = `${timestamp}${randomNum}`;
+      generatedNumber = `QUO-${timestamp}${randomNum}`;
     } else {
       generatedNumber = `${timestamp}${randomNum}`;
     }
@@ -286,30 +266,16 @@ const CreateNewSales = () => {
   useEffect(() => {
     // Validate form based on type
     const validateForm = () => {
-      const commonFieldsValid =
-        customerName !== "" && invoiceNumber !== "" && invoiceDate !== "";
+      const commonFieldsValid = customerName !== "" && invoiceNumber !== "" && invoiceDate !== "";
 
-      const itemsValid =
-        items.length > 0 &&
-        items.every(
-          (item) => item.name !== "" && item.quantity > 0 && item.price > 0
-        );
+      const itemsValid = items.length > 0 && items.every((item) => item.name !== "" && item.quantity > 0 && item.price > 0);
 
       switch (type) {
         case "delivery":
           return commonFieldsValid && dueDate !== "" && itemsValid;
 
         case "order":
-          return (
-            commonFieldsValid &&
-            dueDate !== "" &&
-            customerAddress !== "" &&
-            customerPhone !== "" &&
-            customerEmail !== "" &&
-            shippingMethod !== "" &&
-            paymentMethod !== "" &&
-            itemsValid
-          );
+          return commonFieldsValid && dueDate !== "" && customerAddress !== "" && customerPhone !== "" && customerEmail !== "" && itemsValid;
 
         case "quotation":
           return commonFieldsValid && validUntil !== "" && itemsValid;
@@ -320,20 +286,7 @@ const CreateNewSales = () => {
     };
 
     setIsFormValid(validateForm());
-  }, [
-    customerName,
-    invoiceNumber,
-    invoiceDate,
-    dueDate,
-    items,
-    type,
-    customerAddress,
-    customerPhone,
-    customerEmail,
-    shippingMethod,
-    paymentMethod,
-    validUntil,
-  ]);
+  }, [customerName, invoiceNumber, invoiceDate, dueDate, items, type, customerAddress, customerPhone, customerEmail, shippingMethod, paymentMethod, validUntil]);
 
   // Calculate total with consideration for discounts
   const calculateTotal = () => {
@@ -369,13 +322,10 @@ const CreateNewSales = () => {
     }
 
     try {
-      const calculatedTotal =
-        type === "delivery" || type === "order" || type === "quotation"
-          ? taxData.grandTotal || calculateTotal()
-          : calculateTotal();
+      const calculatedTotal = type === "delivery" || type === "order" || type === "quotation" || type === "invoice" || type === "shipment" || type === "offer" ? taxData.grandTotal || calculateTotal() : calculateTotal();
       const numericInvoiceNumber = parseInt(invoiceNumber);
 
-      if (type === "delivery") {
+      if (type === "delivery" || type === "invoice") {
         // Create Sales Invoice - map status to correct type
         let saleStatus: "Paid" | "Unpaid" | "Late Payment" | "Awaiting Payment";
 
@@ -407,16 +357,36 @@ const CreateNewSales = () => {
         await createSale.mutateAsync(saleData);
         toast.success("Sales Invoice created successfully!");
       } else if (type === "order") {
-        // Create Order Delivery
+        // Create Order
         const orderData = {
           number: numericInvoiceNumber,
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone,
           order_date: invoiceDate,
+          due_date: dueDate,
+          status: status.charAt(0).toUpperCase() + status.slice(1).replace("_", " "),
+          // tracking_number and shipping_address removed per backend changes
+          // shipping_method and payment_method removed per backend changes
+          level: urgencyLevel,
+          items: items,
+          grand_total: calculatedTotal,
+          notes: notes || null,
+          tax_details: taxData,
+        };
+
+        await createOrderDelivery.mutateAsync(orderData);
+        toast.success("Order created successfully!");
+      } else if (type === "shipment") {
+        // Create Shipment
+        const shipmentData = {
+          number: numericInvoiceNumber,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          order_date: invoiceDate,
           delivery_date: dueDate,
-          status:
-            status.charAt(0).toUpperCase() + status.slice(1).replace("_", " "),
+          status: status.charAt(0).toUpperCase() + status.slice(1).replace("_", " "),
           tracking_number: trackingNumber || `TRK-${Date.now()}`,
           shipping_address: customerAddress,
           shipping_method: shippingMethod,
@@ -427,17 +397,49 @@ const CreateNewSales = () => {
           tax_details: taxData,
         };
 
-        await createOrderDelivery.mutateAsync(orderData);
-        toast.success("Order & Delivery created successfully!");
+        await createOrderDelivery.mutateAsync(shipmentData);
+        toast.success("Shipment created successfully!");
+      } else if (type === "offer") {
+        // Create Offer
+        const offerData = {
+          number: numericInvoiceNumber,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          order_date: invoiceDate,
+          delivery_date: dueDate,
+          status: status.charAt(0).toUpperCase() + status.slice(1).replace("_", " "),
+          tracking_number: trackingNumber || `TRK-${Date.now()}`,
+          shipping_address: customerAddress,
+          shipping_method: shippingMethod,
+          payment_method: paymentMethod,
+          items: items,
+          grand_total: calculatedTotal,
+          notes: notes || null,
+          tax_details: taxData,
+        };
+
+        await createOrderDelivery.mutateAsync(offerData);
+        toast.success("Offer created successfully!");
       } else if (type === "quotation") {
         // Create Quotation
+        // map items to expected jsonb shape for backend (item_name, qty, unit, price, disc_item, disc_item_type)
+        const mappedItems = items.map((it) => ({
+          item_name: (it as any).name || (it as any).item_name || "",
+          qty: (it as any).quantity || (it as any).qty || 1,
+          unit: (it as any).unit || "pcs",
+          price: (it as any).price || 0,
+          disc_item: (it as any).discount || (it as any).disc_item || 0,
+          disc_item_type: (it as any).discountType || (it as any).disc_item_type || "percentage",
+        }));
+
         const quotationData = {
           number: numericInvoiceNumber,
           customer_name: customerName,
           quotation_date: invoiceDate,
           valid_until: validUntil,
-          status: "Sent",
-          items: items,
+          status: status || "Pending",
+          items: mappedItems,
           total: calculatedTotal,
           terms: termsAndConditions || null,
           tax_details: taxData,
@@ -475,91 +477,52 @@ const CreateNewSales = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label
-                  htmlFor="trackingNumber"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="trackingNumber" className="text-sm font-medium flex items-center gap-2">
                   <Tag className="h-4 w-4 text-indigo-500" />
                   Tracking Number (Optional)
                 </label>
-                <input
-                  type="text"
-                  id="trackingNumber"
-                  className="w-full p-2 border rounded-md"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Enter tracking number if available"
-                />
+                <input type="text" id="trackingNumber" className="w-full p-2 border rounded-md" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Enter tracking number if available" />
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="status"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="status" className="text-sm font-medium flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-indigo-500" />
                   Order Status
                 </label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger className="w-full">
                     <SelectValue>
-                      <Badge
-                        className={`flex items-center gap-2 ${
-                          getCurrentStatusObject().color
-                        }`}
-                      >
+                      <Badge className={`flex items-center gap-2 ${getCurrentStatusObject().color}`}>
                         {getCurrentStatusObject().icon}
                         <span>{getCurrentStatusObject().label}</span>
                       </Badge>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(statusOptions).map(
-                      ([value, { label, icon, color }]) => (
-                        <SelectItem
-                          key={value}
-                          value={value}
-                          className="flex items-center gap-2"
-                        >
-                          <Badge className={`flex items-center gap-2 ${color}`}>
-                            {icon}
-                            <span>{label}</span>
-                          </Badge>
-                        </SelectItem>
-                      )
-                    )}
+                    {Object.entries(statusOptions).map(([value, { label, icon, color }]) => (
+                      <SelectItem key={value} value={value} className="flex items-center gap-2">
+                        <Badge className={`flex items-center gap-2 ${color}`}>
+                          {icon}
+                          <span>{label}</span>
+                        </Badge>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="shippingMethod"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="shippingMethod" className="text-sm font-medium flex items-center gap-2">
                   <Truck className="h-4 w-4 text-indigo-500" />
                   Shipping Method
                 </label>
-                <Select
-                  value={shippingMethod}
-                  onValueChange={setShippingMethod}
-                >
+                <Select value={shippingMethod} onValueChange={setShippingMethod}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select shipping method">
                       {shippingMethod && (
                         <div className="flex items-center gap-2">
-                          {
-                            shippingMethods.find(
-                              (m) => m.value === shippingMethod
-                            )?.icon
-                          }
-                          <span>
-                            {
-                              shippingMethods.find(
-                                (m) => m.value === shippingMethod
-                              )?.label
-                            }
-                          </span>
+                          {shippingMethods.find((m) => m.value === shippingMethod)?.icon}
+                          <span>{shippingMethods.find((m) => m.value === shippingMethod)?.label}</span>
                         </div>
                       )}
                     </SelectValue>
@@ -578,10 +541,24 @@ const CreateNewSales = () => {
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="paymentMethod"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="urgencyLevel" className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-indigo-500" />
+                  Urgency Level
+                </label>
+                <Select value={urgencyLevel} onValueChange={(v: any) => setUrgencyLevel(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="paymentMethod" className="text-sm font-medium flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-indigo-500" />
                   Payment Method
                 </label>
@@ -590,18 +567,8 @@ const CreateNewSales = () => {
                     <SelectValue placeholder="Select payment method">
                       {paymentMethod && (
                         <div className="flex items-center gap-2">
-                          {
-                            paymentMethods.find(
-                              (m) => m.value === paymentMethod
-                            )?.icon
-                          }
-                          <span>
-                            {
-                              paymentMethods.find(
-                                (m) => m.value === paymentMethod
-                              )?.label
-                            }
-                          </span>
+                          {paymentMethods.find((m) => m.value === paymentMethod)?.icon}
+                          <span>{paymentMethods.find((m) => m.value === paymentMethod)?.label}</span>
                         </div>
                       )}
                     </SelectValue>
@@ -630,27 +597,15 @@ const CreateNewSales = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label
-                  htmlFor="validUntil"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="validUntil" className="text-sm font-medium flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-blue-500" />
                   Valid Until
                 </label>
-                <input
-                  type="date"
-                  id="validUntil"
-                  className="w-full p-2 border rounded-md"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                />
+                <input type="date" id="validUntil" className="w-full p-2 border rounded-md" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="quotationStatus"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="quotationStatus" className="text-sm font-medium flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-500" />
                   Status
                 </label>
@@ -664,43 +619,26 @@ const CreateNewSales = () => {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="bg-white border shadow-lg z-50">
-                    {Object.entries(quotationStatusOptions).map(
-                      ([value, { label, icon, color }]) => (
-                        <SelectItem
-                          key={value}
-                          value={value}
-                          className="hover:bg-gray-50 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${color}`}
-                            >
-                              {icon}
-                              <span>{label}</span>
-                            </div>
+                    {Object.entries(quotationStatusOptions).map(([value, { label, icon, color }]) => (
+                      <SelectItem key={value} value={value} className="hover:bg-gray-50 cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${color}`}>
+                            {icon}
+                            <span>{label}</span>
                           </div>
-                        </SelectItem>
-                      )
-                    )}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <label
-                  htmlFor="termsAndConditions"
-                  className="text-sm font-medium flex items-center gap-2"
-                >
+                <label htmlFor="termsAndConditions" className="text-sm font-medium flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-500" />
                   Terms and Conditions
                 </label>
-                <textarea
-                  id="termsAndConditions"
-                  className="w-full p-2 border rounded-md"
-                  value={termsAndConditions}
-                  onChange={(e) => setTermsAndConditions(e.target.value)}
-                  rows={4}
-                />
+                <textarea id="termsAndConditions" className="w-full p-2 border rounded-md" value={termsAndConditions} onChange={(e) => setTermsAndConditions(e.target.value)} rows={4} />
               </div>
             </div>
           </div>
@@ -714,16 +652,7 @@ const CreateNewSales = () => {
     <div className="flex h-screen">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          title={getPageTitle()}
-          description={
-            type === "delivery"
-              ? "Fill out details to create a new sales invoice"
-              : type === "order"
-              ? "Create and track orders for customers"
-              : "Create price quotes for potential customers"
-          }
-        />
+        <Header title={getPageTitle()} description={type === "delivery" ? "Fill out details to create a new sales invoice" : type === "order" ? "Create and track orders for customers" : "Create price quotes for potential customers"} />
 
         <div className="p-6 flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit}>
@@ -762,25 +691,11 @@ const CreateNewSales = () => {
                   <Tag className="h-5 w-5 text-indigo-600" />
                   <h2 className="text-lg font-medium">Order Items</h2>
                 </div>
-                <SalesItemsSection
-                  items={items}
-                  setItems={setItems}
-                  calculateTotal={calculateTotal}
-                  formatPrice={formatPrice}
-                  allowProductSearch={type === "order"}
-                  availableProducts={productCatalog}
-                />
+                <SalesItemsSection items={items} setItems={setItems} calculateTotal={calculateTotal} formatPrice={formatPrice} allowProductSearch={type === "order"} availableProducts={productCatalog} />
               </div>
 
               {/* Tax Calculation Section - only for Sales Invoices, Order & Delivery, and Quotations */}
-              {(type === "delivery" ||
-                type === "order" ||
-                type === "quotation") && (
-                <SalesTaxCalculation
-                  subtotal={calculateTotal()}
-                  onTaxChange={handleTaxChange}
-                />
-              )}
+              {(type === "delivery" || type === "order" || type === "quotation") && <SalesTaxCalculation subtotal={calculateTotal()} onTaxChange={handleTaxChange} />}
 
               <div className="bg-white p-6 rounded-lg border">
                 <div className="flex justify-between items-center mb-4">
@@ -797,37 +712,20 @@ const CreateNewSales = () => {
                 </div>
 
                 <div className="flex justify-end mt-4 space-x-4">
-                  <h3 className="text-lg font-medium">
-                    Total: Rp {formatPrice(calculateTotal())}
-                  </h3>
+                  <h3 className="text-lg font-medium">Total: Rp {formatPrice(calculateTotal())}</h3>
                 </div>
               </div>
 
               <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/sales")}
-                >
+                <Button type="button" variant="outline" onClick={() => navigate("/sales")}>
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className={
-                    type === "order"
-                      ? "bg-purple-600 text-white hover:bg-purple-700"
-                      : type === "quotation"
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  }
+                  className={type === "order" ? "bg-purple-600 text-white hover:bg-purple-700" : type === "quotation" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-indigo-600 text-white hover:bg-indigo-700"}
                   disabled={!isFormValid}
                 >
-                  Create{" "}
-                  {type === "delivery"
-                    ? "Invoice"
-                    : type === "order"
-                    ? "Order"
-                    : "Quotation"}
+                  Create {type === "delivery" ? "Invoice" : type === "order" ? "Order" : "Quotation"}
                 </Button>
               </div>
             </div>

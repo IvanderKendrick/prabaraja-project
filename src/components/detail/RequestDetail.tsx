@@ -36,19 +36,19 @@ const RequestDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
 
-  const { data: request, isLoading, error } = useQuery({
-    queryKey: ['request', id],
+  const {
+    data: request,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["request", id],
     queryFn: async () => {
-      if (!id) throw new Error('Request ID is required');
-      
-      const { data, error } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('id', id)
-        .single();
+      if (!id) throw new Error("Request ID is required");
+
+      const { data, error } = await supabase.from("requests").select("*").eq("id", id).single();
 
       if (error) {
-        console.error('Error fetching request:', error);
+        console.error("Error fetching request:", error);
         throw error;
       }
 
@@ -57,7 +57,7 @@ const RequestDetail = () => {
         id: data.id,
         user_id: data.user_id,
         number: data.number,
-        date: data.date || new Date().toISOString().split('T')[0],
+        date: data.date || new Date().toISOString().split("T")[0],
         due_date: data.due_date,
         requested_by: data.requested_by,
         urgency: data.urgency,
@@ -103,9 +103,7 @@ const RequestDetail = () => {
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Request Not Found</h3>
-              <p className="text-gray-600 mb-4">
-                The request you're looking for doesn't exist or you don't have permission to view it.
-              </p>
+              <p className="text-gray-600 mb-4">The request you're looking for doesn't exist or you don't have permission to view it.</p>
               <Link to="/purchases">
                 <Button variant="outline">
                   <ArrowLeft className="h-4 w-4 mr-2" />
@@ -121,27 +119,27 @@ const RequestDetail = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -152,7 +150,7 @@ const RequestDetail = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-white">Request Details</h1>
-              <p className="text-white/80">Request #{request.number}</p>
+              <p className="text-white/80">Request #{request.number && request.number.toString().startsWith("REQ-") ? request.number : `REQ-${request.number}`}</p>
             </div>
             <Link to="/purchases">
               <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
@@ -184,9 +182,7 @@ const RequestDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
-                  <Badge className={getStatusColor(request.status)}>
-                    {request.status}
-                  </Badge>
+                  <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -205,9 +201,7 @@ const RequestDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Urgency</p>
-                  <Badge className={getUrgencyColor(request.urgency)}>
-                    {request.urgency}
-                  </Badge>
+                  <Badge className={getUrgencyColor(request.urgency)}>{request.urgency}</Badge>
                 </div>
                 {request.tags && request.tags.length > 0 && (
                   <div>
@@ -234,9 +228,7 @@ const RequestDetail = () => {
               <CardContent>
                 <div>
                   <p className="text-sm text-gray-600">Total Amount</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    Rp. {(request.grand_total || 0).toLocaleString("id-ID")}
-                  </p>
+                  <p className="text-2xl font-bold text-green-600">Rp. {(request.grand_total || 0).toLocaleString("id-ID")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -271,12 +263,8 @@ const RequestDetail = () => {
                             </div>
                           </td>
                           <td className="text-right p-3">{item.quantity || 0}</td>
-                          <td className="text-right p-3">
-                            Rp. {((item.unit_price || item.price) || 0).toLocaleString("id-ID")}
-                          </td>
-                          <td className="text-right p-3 font-medium">
-                            Rp. {(item.total || ((item.quantity || 0) * ((item.unit_price || item.price) || 0))).toLocaleString("id-ID")}
-                          </td>
+                          <td className="text-right p-3">Rp. {(item.unit_price || item.price || 0).toLocaleString("id-ID")}</td>
+                          <td className="text-right p-3 font-medium">Rp. {(item.total || (item.quantity || 0) * (item.unit_price || item.price || 0)).toLocaleString("id-ID")}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -285,9 +273,7 @@ const RequestDetail = () => {
                         <td colSpan={3} className="p-3 text-right font-medium">
                           Grand Total:
                         </td>
-                        <td className="text-right p-3 font-bold text-green-600">
-                          Rp. {(request.grand_total || 0).toLocaleString("id-ID")}
-                        </td>
+                        <td className="text-right p-3 font-bold text-green-600">Rp. {(request.grand_total || 0).toLocaleString("id-ID")}</td>
                       </tr>
                     </tfoot>
                   </table>

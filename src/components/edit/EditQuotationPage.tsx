@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { CreatePurchaseForm } from "../create/CreatePurchaseForm";
+import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
 
 export default function EditQuotationPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,10 +29,7 @@ export default function EditQuotationPage() {
     const fetchQuotation = async () => {
       try {
         const token = getAuthToken();
-        const res = await axios.get(
-          `https://pbw-backend-api.vercel.app/api/purchases?action=getQuotation&search=${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await axios.get(`https://pbw-backend-api.vercel.app/api/purchases?action=getQuotation&search=${id}`, { headers: { Authorization: `Bearer ${token}` } });
 
         if (!res.data?.data?.length) throw new Error("Quotation not found");
         setQuotation(res.data.data[0]);
@@ -59,56 +58,27 @@ export default function EditQuotationPage() {
       // 🧾 Basic info
       apiFormData.append("id", quotation.id);
       apiFormData.append("number", formData.number || quotation.number);
-      apiFormData.append(
-        "quotation_date",
-        formData.quotationDate || quotation.quotation_date
-      );
+      apiFormData.append("quotation_date", formData.quotationDate || quotation.quotation_date);
       apiFormData.append("due_date", formData.dueDate || quotation.due_date);
       apiFormData.append("status", "Pending");
-      apiFormData.append(
-        "valid_until",
-        formData.validUntil || quotation.valid_until
-      );
+      apiFormData.append("valid_until", formData.validUntil || quotation.valid_until);
       apiFormData.append("terms", formData.terms || quotation.terms || "");
       apiFormData.append("memo", formData.memo || quotation.memo || "");
 
       // 🧩 Vendor info
-      apiFormData.append(
-        "vendor_name",
-        formData.vendorName || quotation.vendor_name || ""
-      );
-      apiFormData.append(
-        "vendor_address",
-        formData.vendorAddress || quotation.vendor_address || ""
-      );
-      apiFormData.append(
-        "vendor_phone",
-        formData.vendorPhone || quotation.vendor_phone || ""
-      );
-      apiFormData.append(
-        "start_date",
-        formData.startDate || quotation.start_date || ""
-      );
+      apiFormData.append("vendor_name", formData.vendorName || quotation.vendor_name || "");
+      apiFormData.append("vendor_address", formData.vendorAddress || quotation.vendor_address || "");
+      apiFormData.append("vendor_phone", formData.vendorPhone || quotation.vendor_phone || "");
+      apiFormData.append("start_date", formData.startDate || quotation.start_date || "");
 
       // 🏷️ Tags
-      const tagsValue = Array.isArray(formData.tags)
-        ? formData.tags.join(",")
-        : formData.tags || quotation.tags?.join(",") || "";
+      const tagsValue = Array.isArray(formData.tags) ? formData.tags.join(",") : formData.tags || quotation.tags?.join(",") || "";
       apiFormData.append("tags", tagsValue);
 
       // 🧮 Tax & totals
-      apiFormData.append(
-        "tax_method",
-        formData.taxCalculationMethod ? "After Calculate" : "Before Calculate"
-      );
-      apiFormData.append(
-        "total",
-        (formData.total || quotation.grand_total || 0).toString()
-      );
-      apiFormData.append(
-        "grand_total",
-        (formData.grandTotal || quotation.grand_total || 0).toString()
-      );
+      apiFormData.append("tax_method", formData.taxCalculationMethod ? "After Calculate" : "Before Calculate");
+      apiFormData.append("total", (formData.total || quotation.grand_total || 0).toString());
+      apiFormData.append("grand_total", (formData.grandTotal || quotation.grand_total || 0).toString());
       apiFormData.append("dpp", (0).toString());
       apiFormData.append("ppn", (0).toString());
       apiFormData.append("pph", (0).toString());
@@ -172,11 +142,7 @@ export default function EditQuotationPage() {
       }
 
       // 🚀 API call
-      const res = await axios.put(
-        "https://pbw-backend-api.vercel.app/api/purchases",
-        apiFormData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.put("https://pbw-backend-api.vercel.app/api/purchases", apiFormData, { headers: { Authorization: `Bearer ${token}` } });
 
       if (res.data && !res.data.error) {
         toast.success("Quotation updated successfully");
@@ -192,32 +158,27 @@ export default function EditQuotationPage() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex h-screen items-center justify-center text-gray-500">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" />
-        Loading quotation details...
-      </div>
-    );
-
-  if (!quotation)
-    return (
-      <div className="flex h-screen items-center justify-center text-gray-500">
-        Quotation not found or failed to load.
-      </div>
-    );
-
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Edit Quotation</h1>
-      <CreatePurchaseForm
-        purchaseType="quotation"
-        setPurchaseType={() => {}}
-        isReadOnlyTypeAndNumber={true}
-        onSubmit={handleUpdate}
-        initialData={quotation}
-        submitLabel={updating ? "Updating..." : "Update Quotation"}
-      />
+    <div className="flex h-screen w-full">
+      <Sidebar />
+      <div className="flex-1 overflow-auto">
+        <Header title={`Edit Quotation ${quotation?.number || ""}`} description="Edit purchase quotation" />
+
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-gray-500">
+              <Loader2 className="h-8 w-8 animate-spin mr-2" />
+              Loading quotation details...
+            </div>
+          ) : !quotation ? (
+            <div className="flex items-center justify-center py-20 text-gray-500">Quotation not found or failed to load.</div>
+          ) : (
+            <div className="max-w-6xl mx-auto">
+              <CreatePurchaseForm purchaseType="quotation" setPurchaseType={() => {}} isReadOnlyTypeAndNumber={true} onSubmit={handleUpdate} initialData={quotation} submitLabel={updating ? "Updating..." : "Update Quotation"} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

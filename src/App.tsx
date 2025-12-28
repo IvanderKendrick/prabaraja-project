@@ -38,6 +38,7 @@ import BillingSummary from "./pages/BillingSummary";
 
 // Import approval pages
 import Approval from "./pages/Approval";
+import ApprovalSales from "./pages/ApprovalSales";
 
 // Import detail components
 import InvoiceDetail from "./components/detail/InvoiceDetail";
@@ -51,23 +52,34 @@ import ExpenseDetail from "./components/detail/ExpenseDetail";
 import RequestDetail from "./components/detail/RequestDetail";
 import { PurchaseQuotationDetail } from "./components/detail/PurchaseQuotationDetail";
 import { PurchaseOffersDetail } from "./components/detail/PurchaseOffersDetail";
+import BillingOrderDetail from "./components/detail/BillingOrderDetail";
+import ReceivableSummaryDetail from "./components/detail/ReceivableSummaryDetail";
 
 // Import create components
 import CreateNewPurchase from "./components/create/CreateNewPurchase";
 import EditPurchase from "./components/EditPurchase";
+import CreateSalesQuotation from "./pages/sales/CreateSalesQuotation";
+import CreateSalesOrder from "./pages/sales/CreateSalesOrder";
+import CreateSalesShipment from "./pages/sales/CreateSalesShipment";
+import CreateSalesInvoice from "./pages/sales/CreateSalesInvoice";
 import CreateNewSales from "./components/create/CreateNewSales";
 import CreateExpense from "./components/create/CreateExpense";
 import { PurchaseRequestDetail } from "./components/detail/PurchaseRequestDetail";
 import { PurchaseOrderDetail } from "./components/detail/PurchaseOrderDetail";
 import { PurchaseShipmentDetail } from "./components/detail/PurchaseShipmentDetail";
 import { PurchaseInvoiceDetail } from "./components/detail/PurchaseInvoiceDetail";
+import EditSalesQuotation from "./pages/sales/EditSalesQuotation";
+import EditSalesOrder from "./pages/sales/EditSalesOrder";
+import EditSalesShipment from "./pages/sales/EditSalesShipment";
 import EditQuotationPage from "./components/edit/EditQuotationPage";
+import EditBillingInvoiceSales from "./pages/sales/EditBillingInvoice";
 import EditBillingInvoice from "./pages/EditBillingInvoice";
 import ViewBillingInvoice from "./pages/ViewBillingInvoice";
 import ViewBillingOrder from "./pages/ViewBillingOrder";
 import EditBillingOrder from "./pages/EditBillingOrder";
 import EditRequestPage from "./components/edit/EditRequestPage";
 import EditShipmentPage from "./components/edit/EditShipmentPage";
+import EditSalesInvoice from "./pages/sales/EditSalesInvoice";
 import EditInvoicePage from "./components/edit/EditInvoicePage";
 import Inventory from "./pages/Inventory/Inventory";
 import StockDetail from "./pages/Inventory/Stock/StockDetail";
@@ -216,6 +228,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Sales />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales/approval"
+                element={
+                  <ProtectedRoute>
+                    <ApprovalSales />
                   </ProtectedRoute>
                 }
               />
@@ -438,7 +459,34 @@ function App() {
                 path="/create-sales"
                 element={
                   <ProtectedRoute>
-                    <CreateNewSales />
+                    <CreateSalesQuotation />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/create-sales-order"
+                element={
+                  <ProtectedRoute>
+                    <CreateSalesOrder />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/create-sales-shipment"
+                element={
+                  <ProtectedRoute>
+                    <CreateSalesShipment />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/create-sales-invoice"
+                element={
+                  <ProtectedRoute>
+                    <CreateSalesInvoice />
                   </ProtectedRoute>
                 }
               />
@@ -482,6 +530,15 @@ function App() {
 
               <Route
                 path="/quotation/:id"
+                element={
+                  <ProtectedRoute>
+                    <QuotationDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-quotation/:id"
                 element={
                   <ProtectedRoute>
                     <QuotationDetail />
@@ -553,6 +610,42 @@ function App() {
               />
 
               <Route
+                path="/sales-quotation/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditSalesQuotation />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-order/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditSalesOrder />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-shipment/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditSalesShipment />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-invoice/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditSalesInvoice />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/edit-request/:id"
                 element={
                   <ProtectedRoute>
@@ -589,7 +682,25 @@ function App() {
               />
 
               <Route
+                path="/sales-order/:id"
+                element={
+                  <ProtectedRoute>
+                    <OrderDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/offer/:id"
+                element={
+                  <ProtectedRoute>
+                    <OfferDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-offer/:id"
                 element={
                   <ProtectedRoute>
                     <OfferDetail />
@@ -602,6 +713,33 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ShipmentDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-billing-order/:id"
+                element={
+                  <ProtectedRoute>
+                    <BillingOrderDetail />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-billing-order/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditBillingOrder />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-receivable-summary/:id"
+                element={
+                  <ProtectedRoute>
+                    <ReceivableSummaryDetail />
                   </ProtectedRoute>
                 }
               />
@@ -657,6 +795,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <EditBillingInvoice />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/sales-receivable-summary/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditBillingInvoiceSales />
                   </ProtectedRoute>
                 }
               />

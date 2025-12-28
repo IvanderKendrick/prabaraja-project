@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CreatePurchaseForm } from "../create/CreatePurchaseForm";
 import { PurchaseType } from "@/types/purchase";
 import { toast } from "sonner";
 import axios from "axios";
+import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
 
 export default function EditShipmentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [initialData, setInitialData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // 🔹 Normalisasi items dari API agar sesuai PurchaseItemsForm
   const normalizeItemsFromApi = (raw: any[] = []) => {
@@ -18,11 +22,7 @@ export default function EditShipmentPage() {
       const isRupiah = it.disc_item_type === "rupiah";
 
       return {
-        id:
-          it.id ??
-          (typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : Math.random().toString(36).slice(2)),
+        id: it.id ?? (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2)),
         name: it.item_name ?? "",
         sku: it.sku ?? "",
         memo: it.memo ?? "",
@@ -78,15 +78,11 @@ export default function EditShipmentPage() {
   // 🔹 Fetch data shipment berdasarkan ID
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const token = JSON.parse(
-          localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token") || "{}"
-        ).access_token;
+        const token = JSON.parse(localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token") || "{}").access_token;
 
-        const res = await fetch(
-          `https://pbw-backend-api.vercel.app/api/purchases?action=getShipment&search=${id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await fetch(`https://pbw-backend-api.vercel.app/api/purchases?action=getShipment&search=${id}`, { headers: { Authorization: `Bearer ${token}` } });
 
         const json = await res.json();
         if (Array.isArray(json?.data) && json.data.length > 0) {
@@ -97,6 +93,8 @@ export default function EditShipmentPage() {
       } catch (error) {
         console.error("❌ Gagal fetch shipment:", error);
         setInitialData(null);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -107,9 +105,7 @@ export default function EditShipmentPage() {
   const handleSubmit = async (formData: any) => {
     setIsLoading(true);
     try {
-      const token = JSON.parse(
-        localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token") || "{}"
-      ).access_token;
+      const token = JSON.parse(localStorage.getItem("sb-xwfkrjtqcqmmpclioakd-auth-token") || "{}").access_token;
 
       const apiFormData = new FormData();
       apiFormData.append("action", "editNewShipment");
@@ -122,12 +118,7 @@ export default function EditShipmentPage() {
       apiFormData.append("status", "Pending");
       apiFormData.append("number", formData.number || "");
 
-      apiFormData.append(
-        "tags",
-        Array.isArray(formData.tags)
-          ? formData.tags.join(",")
-          : formData.tags || ""
-      );
+      apiFormData.append("tags", Array.isArray(formData.tags) ? formData.tags.join(",") : formData.tags || "");
 
       // items mapping
       // const mappedItems = (formData.items || []).map((it: any) => {
@@ -190,26 +181,14 @@ export default function EditShipmentPage() {
       apiFormData.append("memo", formData.memo || "");
 
       // pajak dan total
-      apiFormData.append(
-        "tax_method",
-        formData.taxCalculationMethod ? "After Calculate" : "Before Calculate"
-      );
-      apiFormData.append(
-        "ppn_percentage",
-        String(formData.ppnPercentage ?? 11)
-      );
-      apiFormData.append(
-        "pph_type",
-        formData.pphType ? String(formData.pphType).replace(/[^\d]+/, "") : "23"
-      );
+      apiFormData.append("tax_method", formData.taxCalculationMethod ? "After Calculate" : "Before Calculate");
+      apiFormData.append("ppn_percentage", String(formData.ppnPercentage ?? 11));
+      apiFormData.append("pph_type", formData.pphType ? String(formData.pphType).replace(/[^\d]+/, "") : "23");
       apiFormData.append("pph_percentage", String(formData.pphPercentage ?? 2));
       apiFormData.append("dpp", String(formData.dpp ?? 0));
       apiFormData.append("ppn", String(formData.ppn ?? 0));
       apiFormData.append("pph", String(formData.pph ?? 0));
-      apiFormData.append(
-        "total",
-        String(formData.subtotalWithCosts ?? formData.total ?? 0)
-      );
+      apiFormData.append("total", String(formData.subtotalWithCosts ?? formData.total ?? 0));
       apiFormData.append("grand_total", String(formData.grandTotal ?? 0));
 
       // biarkan file lama tetap
@@ -241,11 +220,7 @@ export default function EditShipmentPage() {
       // }
 
       // 🚀 API call pakai axios
-      const res = await axios.put(
-        "https://pbw-backend-api.vercel.app/api/purchases",
-        apiFormData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.put("https://pbw-backend-api.vercel.app/api/purchases", apiFormData, { headers: { Authorization: `Bearer ${token}` } });
 
       // ✅ Cek hasil respons
       if (res.data && !res.data.error) {
@@ -264,21 +239,25 @@ export default function EditShipmentPage() {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Edit Shipment</h1>
-      {initialData ? (
-        <CreatePurchaseForm
-          purchaseType={"shipment" as PurchaseType}
-          setPurchaseType={() => {}}
-          onSubmit={handleSubmit}
-          initialData={initialData}
-          isLoading={isLoading}
-          isReadOnlyTypeAndNumber
-          submitLabel="Update Shipment"
-        />
-      ) : (
-        <p>Loading...</p>
-      )}
+    <div className="flex h-screen w-full">
+      <Sidebar />
+      <div className="flex-1 overflow-auto">
+        <Header title={`Edit Shipment ${initialData?.number || ""}`} description="Edit purchase shipment" />
+        <div className="p-6">
+          <div className="max-w-6xl mx-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-20 text-gray-500">
+                <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                Loading shipment details...
+              </div>
+            ) : initialData ? (
+              <CreatePurchaseForm purchaseType={"shipment" as PurchaseType} setPurchaseType={() => {}} onSubmit={handleSubmit} initialData={initialData} isLoading={isLoading} isReadOnlyTypeAndNumber submitLabel="Update Shipment" />
+            ) : (
+              <div className="text-center py-20 text-gray-500">Shipment not found or failed to load.</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

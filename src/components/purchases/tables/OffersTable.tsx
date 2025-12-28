@@ -1,44 +1,14 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import {
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Check,
-  X,
-  Loader2,
-  AlertCircle,
-  Eye,
-} from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Check, X, Loader2, AlertCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { OfferPurchase } from "@/types/purchase";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useOffersAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
 import { Pagination } from "@/components/Pagination";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
@@ -66,9 +36,7 @@ import { formatPriceWithSeparator } from "@/utils/salesUtils";
 // };
 
 // Transform API data to table format
-const transformAPIDataToTable = (
-  apiData: PurchaseAPIResponse[]
-): OfferPurchase[] => {
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): OfferPurchase[] => {
   return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
@@ -101,18 +69,7 @@ interface PurchaseOffersTableProps {
 }
 
 export function OffersTable({ onView }: PurchaseOffersTableProps) {
-  const {
-    data: apiData,
-    isLoading,
-    error,
-    page,
-    limit,
-    totalPages,
-    total,
-    handlePageChange,
-    handleLimitChange,
-    refresh,
-  } = useOffersAPI();
+  const { data: apiData, isLoading, error, page, limit, totalPages, total, handlePageChange, handleLimitChange, refresh } = useOffersAPI();
 
   // Transform API data to table format
   const offers = transformAPIDataToTable(apiData);
@@ -160,9 +117,7 @@ export function OffersTable({ onView }: PurchaseOffersTableProps) {
               <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">
-                    Loading offers...
-                  </span>
+                  <span className="text-sm text-gray-500">Loading offers...</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -196,12 +151,7 @@ export function OffersTable({ onView }: PurchaseOffersTableProps) {
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    className="mt-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={refresh} className="mt-2">
                     Try Again
                   </Button>
                 </div>
@@ -233,49 +183,29 @@ export function OffersTable({ onView }: PurchaseOffersTableProps) {
           <TableBody>
             {offers.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-6 text-muted-foreground"
-                >
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   No offers found
                 </TableCell>
               </TableRow>
             ) : (
               offers.map((offer) => (
                 <TableRow key={offer.id}>
-                  <TableCell className="font-medium">
-                    {offer.date.toLocaleDateString("en-GB")}
-                  </TableCell>
+                  <TableCell className="font-medium">{offer.date.toLocaleDateString("en-GB")}</TableCell>
                   <TableCell>
-                    <button
-                      onClick={() =>
-                        (window.location.href = `/offer/${offer.id}`)
-                      }
-                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                    >
+                    <button onClick={() => (onView ? onView(offer.id) : (window.location.href = `/purchase-offers/${offer.id}`))} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
                       {offer.number}
                     </button>
                   </TableCell>
                   <TableCell>{offer.vendorName}</TableCell>
-                  <TableCell className={cn("text-gray-900")}>
-                    {offer.startDate
-                      ? new Date(offer.startDate).toLocaleDateString("en-GB")
-                      : "-"}
-                  </TableCell>
-                  <TableCell className={cn("text-red-500 font-medium")}>
-                    {offer.expiryDate
-                      ? new Date(offer.expiryDate).toLocaleDateString("en-GB")
-                      : "-"}
-                  </TableCell>
+                  <TableCell className={cn("text-gray-900")}>{offer.startDate ? new Date(offer.startDate).toLocaleDateString("en-GB") : "-"}</TableCell>
+                  <TableCell className={cn("text-red-500 font-medium")}>{offer.expiryDate ? new Date(offer.expiryDate).toLocaleDateString("en-GB") : "-"}</TableCell>
                   <TableCell>{offer.discountTerms}</TableCell>
                   {/* <TableCell>
                     <Badge className={getStatusBadgeProps(offer.status)}>
                       {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
                     </Badge>
                   </TableCell> */}
-                  <TableCell className="font-medium">
-                    Rp {formatPriceWithSeparator(offer.amount)}
-                  </TableCell>
+                  <TableCell className="font-medium">Rp {formatPriceWithSeparator(offer.amount)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -336,15 +266,7 @@ export function OffersTable({ onView }: PurchaseOffersTableProps) {
 
       {/* Pagination */}
       {offers.length > 0 && (
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={apiData.length * totalPages}
-          itemsPerPage={limit}
-          onPageChange={handlePageChange}
-          onItemsPerPageChange={handleLimitChange}
-          itemsPerPageOptions={[5, 10, 20, 50]}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} totalItems={apiData.length * totalPages} itemsPerPage={limit} onPageChange={handlePageChange} onItemsPerPageChange={handleLimitChange} itemsPerPageOptions={[5, 10, 20, 50]} />
       )}
 
       {/* Delete Confirmation Dialog */}

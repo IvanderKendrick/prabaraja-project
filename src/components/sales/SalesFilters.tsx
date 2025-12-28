@@ -2,27 +2,9 @@ import { Search, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DollarSign,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  FileText,
-  Truck,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, CheckCircle, Clock, AlertTriangle, FileText, Truck } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type FilterCategory = "all" | "unpaid" | "paid" | "late" | "awaiting";
 
@@ -31,27 +13,28 @@ interface SalesFiltersProps {
   setFilterCategory: (value: FilterCategory) => void;
   searchValue: string;
   setSearchValue: (value: string) => void;
+  activeTab?: string;
 }
 
-export const SalesFilters = ({
-  filterCategory,
-  setFilterCategory,
-  searchValue,
-  setSearchValue,
-}: SalesFiltersProps) => {
+export const SalesFilters = ({ filterCategory, setFilterCategory, searchValue, setSearchValue, activeTab }: SalesFiltersProps) => {
   const navigate = useNavigate();
 
   const handleCreateNew = (type: string) => {
-    navigate("/create-sales", { state: { type } });
+    // route to dedicated create pages where available
+    if (type === "order") return navigate("/create-sales-order");
+    if (type === "shipment") return navigate("/create-sales-shipment");
+    if (type === "invoice") return navigate("/create-sales-invoice");
+    // fallback: open generic create-sales (quotation)
+    return navigate("/create-sales", { state: { type } });
   };
+
+  // Hide Create New button when on billing-summary or offers tab
+  const showCreateNew = activeTab !== "billing-summary" && activeTab !== "offers";
 
   return (
     <div className="flex justify-between items-center">
       <div className="flex space-x-2 items-center">
-        <Select
-          value={filterCategory}
-          onValueChange={(value) => setFilterCategory(value as FilterCategory)}
-        >
+        <Select value={filterCategory} onValueChange={(value) => setFilterCategory(value as FilterCategory)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -95,37 +78,31 @@ export const SalesFilters = ({
             onChange={(e) => setSearchValue(e.target.value)}
           />
         </div>
-        <div className="flex space-x-2 items-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="bg-sidebar-active text-white">
-                <Plus className="mr-2 h-4 w-4" /> Create New
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white">
-              <DropdownMenuItem
-                onClick={() => handleCreateNew("delivery")}
-                className="flex items-center cursor-pointer"
-              >
-                <FileText className="mr-2 h-4 w-4 text-purple-500" /> Sales
-                Invoice
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleCreateNew("order")}
-                className="flex items-center cursor-pointer"
-              >
-                <Truck className="mr-2 h-4 w-4 text-orange-500" /> Order &
-                Delivery
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleCreateNew("quotation")}
-                className="flex items-center cursor-pointer"
-              >
-                <FileText className="mr-2 h-4 w-4 text-blue-500" /> Quotation
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {showCreateNew && (
+          <div className="flex space-x-2 items-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="bg-sidebar-active text-white">
+                  <Plus className="mr-2 h-4 w-4" /> Create New
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white">
+                <DropdownMenuItem onClick={() => handleCreateNew("invoice")} className="flex items-center cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4 text-purple-500" /> New Invoice
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateNew("shipment")} className="flex items-center cursor-pointer">
+                  <Truck className="mr-2 h-4 w-4 text-green-500" /> New Shipment
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateNew("order")} className="flex items-center cursor-pointer">
+                  <Truck className="mr-2 h-4 w-4 text-orange-500" /> New Order
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateNew("quotation")} className="flex items-center cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4 text-blue-500" /> New Quotation
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
     </div>
   );

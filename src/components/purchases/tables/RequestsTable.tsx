@@ -1,45 +1,14 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import {
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  AlertTriangle,
-  Check,
-  X,
-  Loader2,
-  AlertCircle,
-  Eye,
-} from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, AlertTriangle, Check, X, Loader2, AlertCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { RequestPurchase } from "@/types/purchase";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useRequestsAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
 import { Pagination } from "@/components/Pagination";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
@@ -81,9 +50,7 @@ const getUrgencyBadgeProps = (urgency: string) => {
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (
-  apiData: PurchaseAPIResponse[]
-): RequestPurchase[] => {
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): RequestPurchase[] => {
   return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
@@ -101,25 +68,8 @@ const transformAPIDataToTable = (
   }));
 };
 
-export function RequestsTable({
-  onDelete,
-  onEdit,
-  onView,
-  onApprove,
-  onReject,
-}: RequestsTableProps) {
-  const {
-    data: apiData,
-    isLoading,
-    error,
-    page,
-    limit,
-    totalPages,
-    total,
-    handlePageChange,
-    handleLimitChange,
-    refresh,
-  } = useRequestsAPI();
+export function RequestsTable({ onDelete, onEdit, onView, onApprove, onReject }: RequestsTableProps) {
+  const { data: apiData, isLoading, error, page, limit, totalPages, total, handlePageChange, handleLimitChange, refresh } = useRequestsAPI();
 
   // Transform API data to table format
   const requests = transformAPIDataToTable(apiData);
@@ -170,9 +120,7 @@ export function RequestsTable({
               <TableCell colSpan={8} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">
-                    Loading requests...
-                  </span>
+                  <span className="text-sm text-gray-500">Loading requests...</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -205,12 +153,7 @@ export function RequestsTable({
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    className="mt-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={refresh} className="mt-2">
                     Try Again
                   </Button>
                 </div>
@@ -241,52 +184,31 @@ export function RequestsTable({
           <TableBody>
             {requests.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-6 text-muted-foreground"
-                >
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                   No requests found
                 </TableCell>
               </TableRow>
             ) : (
               requests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="font-medium">
-                    {request.date.toLocaleDateString("en-GB")}
-                  </TableCell>
+                  <TableCell className="font-medium">{request.date.toLocaleDateString("en-GB")}</TableCell>
                   <TableCell>
-                    <button
-                      onClick={() =>
-                        (window.location.href = `/request/${request.id}`)
-                      }
-                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                    >
+                    <button onClick={() => (onView ? onView(request.id) : (window.location.href = `/purchase-request/${request.id}`))} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
                       {request.number}
                     </button>
                   </TableCell>
                   <TableCell>{request.requestedBy}</TableCell>
                   <TableCell>
                     <Badge className={getUrgencyBadgeProps(request.urgency)}>
-                      {request.urgency === "High" && (
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                      )}
+                      {request.urgency === "High" && <AlertTriangle className="h-3 w-3 mr-1" />}
                       {request.urgency}
                     </Badge>
                   </TableCell>
-                  <TableCell className={cn("text-red-500 font-medium")}>
-                    {request.dueDate
-                      ? request.dueDate.toLocaleDateString("en-GB")
-                      : "-"}
-                  </TableCell>
+                  <TableCell className={cn("text-red-500 font-medium")}>{request.dueDate ? request.dueDate.toLocaleDateString("en-GB") : "-"}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusBadgeProps(request.status)}>
-                      {request.status.charAt(0).toUpperCase() +
-                        request.status.slice(1)}
-                    </Badge>
+                    <Badge className={getStatusBadgeProps(request.status)}>{request.status.charAt(0).toUpperCase() + request.status.slice(1)}</Badge>
                   </TableCell>
-                  <TableCell className="font-medium">
-                    Rp {formatPriceWithSeparator(request.amount)}
-                  </TableCell>
+                  <TableCell className="font-medium">Rp {formatPriceWithSeparator(request.amount)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -302,26 +224,18 @@ export function RequestsTable({
                             View
                           </DropdownMenuItem>
                         )}
-                        {request.status === "pending" &&
-                          onApprove &&
-                          onReject && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => onApprove(request.id)}
-                                className="text-green-600"
-                              >
-                                <Check className="mr-2 h-4 w-4" />
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => onReject(request.id)}
-                                className="text-red-600"
-                              >
-                                <X className="mr-2 h-4 w-4" />
-                                Reject
-                              </DropdownMenuItem>
-                            </>
-                          )}
+                        {request.status === "pending" && onApprove && onReject && (
+                          <>
+                            <DropdownMenuItem onClick={() => onApprove(request.id)} className="text-green-600">
+                              <Check className="mr-2 h-4 w-4" />
+                              Approve
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onReject(request.id)} className="text-red-600">
+                              <X className="mr-2 h-4 w-4" />
+                              Reject
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         {onEdit && (
                           <DropdownMenuItem onClick={() => onEdit(request.id)}>
                             <Edit className="mr-2 h-4 w-4" />
@@ -329,10 +243,7 @@ export function RequestsTable({
                           </DropdownMenuItem>
                         )}
                         {onDelete && (
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteClick(request.id)}
-                            className="text-red-600"
-                          >
+                          <DropdownMenuItem onClick={() => handleDeleteClick(request.id)} className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -349,35 +260,19 @@ export function RequestsTable({
 
       {/* Pagination */}
       {requests.length > 0 && (
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={apiData.length * totalPages}
-          itemsPerPage={limit}
-          onPageChange={handlePageChange}
-          onItemsPerPageChange={handleLimitChange}
-          itemsPerPageOptions={[5, 10, 20, 50]}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} totalItems={apiData.length * totalPages} itemsPerPage={limit} onPageChange={handlePageChange} onItemsPerPageChange={handleLimitChange} itemsPerPageOptions={[5, 10, 20, 50]} />
       )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this request?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              request.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Are you sure you want to delete this request?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. This will permanently delete the request.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDelete}>No</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
               Yes, Delete
             </AlertDialogAction>
           </AlertDialogFooter>

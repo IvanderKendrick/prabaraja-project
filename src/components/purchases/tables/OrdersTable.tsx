@@ -1,43 +1,14 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import {
-  MoreHorizontal,
-  AlertTriangle,
-  Edit,
-  Trash2,
-  Loader2,
-  AlertCircle,
-  Eye,
-} from "lucide-react";
+import { MoreHorizontal, AlertTriangle, Edit, Trash2, Loader2, AlertCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { OrderPurchase } from "@/types/purchase";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useOrdersAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
 import { Pagination } from "@/components/Pagination";
 import { formatPriceWithSeparator } from "@/utils/salesUtils";
@@ -74,16 +45,12 @@ const getUrgencyBadgeProps = (urgency: string) => {
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (
-  apiData: PurchaseAPIResponse[]
-): OrderPurchase[] => {
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): OrderPurchase[] => {
   return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
     number: item.number,
-    orderDate: item.orders_date
-      ? new Date(item.orders_date)
-      : new Date(item.date),
+    orderDate: item.orders_date ? new Date(item.orders_date) : new Date(item.date),
     orderedBy: item.ordered_by || "",
     dueDate: item.due_date ? new Date(item.due_date) : undefined,
     // status: item.status as any,
@@ -105,18 +72,7 @@ interface OrdersTableProps {
 }
 
 export function OrdersTable({ onView }: OrdersTableProps) {
-  const {
-    data: apiData,
-    isLoading,
-    error,
-    page,
-    limit,
-    totalPages,
-    total,
-    handlePageChange,
-    handleLimitChange,
-    refresh,
-  } = useOrdersAPI();
+  const { data: apiData, isLoading, error, page, limit, totalPages, total, handlePageChange, handleLimitChange, refresh } = useOrdersAPI();
 
   // Transform API data to table format
   const orders = transformAPIDataToTable(apiData);
@@ -164,9 +120,7 @@ export function OrdersTable({ onView }: OrdersTableProps) {
               <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">
-                    Loading orders...
-                  </span>
+                  <span className="text-sm text-gray-500">Loading orders...</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -200,12 +154,7 @@ export function OrdersTable({ onView }: OrdersTableProps) {
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    className="mt-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={refresh} className="mt-2">
                     Try Again
                   </Button>
                 </div>
@@ -237,26 +186,16 @@ export function OrdersTable({ onView }: OrdersTableProps) {
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-6 text-muted-foreground"
-                >
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   No orders found
                 </TableCell>
               </TableRow>
             ) : (
               orders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">
-                    {order.orderDate.toLocaleDateString("en-GB")}
-                  </TableCell>
+                  <TableCell className="font-medium">{order.orderDate.toLocaleDateString("en-GB")}</TableCell>
                   <TableCell>
-                    <button
-                      onClick={() =>
-                        (window.location.href = `/order/${order.id}`)
-                      }
-                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                    >
+                    <button onClick={() => (onView ? onView(order.id) : (window.location.href = `/purchase-order/${order.id}`))} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
                       {order.number}
                     </button>
                   </TableCell>
@@ -264,28 +203,18 @@ export function OrdersTable({ onView }: OrdersTableProps) {
                   {/* <TableCell>{order.items.length}</TableCell> */}
                   <TableCell>
                     <Badge className={getUrgencyBadgeProps(order.urgency)}>
-                      {order.urgency === "High" && (
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                      )}
+                      {order.urgency === "High" && <AlertTriangle className="h-3 w-3 mr-1" />}
                       {order.urgency}
                     </Badge>
                   </TableCell>
-                  <TableCell className={cn("text-red-500 font-medium")}>
-                    {order.dueDate
-                      ? order.dueDate.toLocaleDateString("en-GB")
-                      : "-"}
-                  </TableCell>
+                  <TableCell className={cn("text-red-500 font-medium")}>{order.dueDate ? order.dueDate.toLocaleDateString("en-GB") : "-"}</TableCell>
                   {/* <TableCell>
                     <Badge className={getStatusBadgeProps(order.status)}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </Badge>
                   </TableCell> */}
-                  <TableCell className="font-medium">
-                    Rp {formatPriceWithSeparator(order.amount)}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    Rp {formatPriceWithSeparator(order.installmentAmount)}
-                  </TableCell>
+                  <TableCell className="font-medium">Rp {formatPriceWithSeparator(order.amount)}</TableCell>
+                  <TableCell className="font-medium">Rp {formatPriceWithSeparator(order.installmentAmount)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -328,15 +257,7 @@ export function OrdersTable({ onView }: OrdersTableProps) {
 
       {/* Pagination */}
       {orders.length > 0 && (
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={apiData.length * totalPages}
-          itemsPerPage={limit}
-          onPageChange={handlePageChange}
-          onItemsPerPageChange={handleLimitChange}
-          itemsPerPageOptions={[5, 10, 20, 50]}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} totalItems={apiData.length * totalPages} itemsPerPage={limit} onPageChange={handlePageChange} onItemsPerPageChange={handleLimitChange} itemsPerPageOptions={[5, 10, 20, 50]} />
       )}
 
       {/* Delete Confirmation Dialog */}

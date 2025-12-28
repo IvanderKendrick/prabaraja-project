@@ -109,8 +109,8 @@ const OrderDeliveryDetail = () => {
                     <p className="font-medium">{new Date(order.order_date).toLocaleDateString()}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Delivery Date</p>
-                    <p className="font-medium">{new Date(order.delivery_date).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-500">Due Date</p>
+                    <p className="font-medium">{new Date(order.due_date).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Tracking Number</p>

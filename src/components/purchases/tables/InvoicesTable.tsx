@@ -1,42 +1,13 @@
 import { format } from "date-fns";
-import {
-  MoreHorizontal,
-  Edit,
-  CreditCard,
-  Trash2,
-  Loader2,
-  AlertCircle,
-  Eye,
-} from "lucide-react";
+import { MoreHorizontal, Edit, CreditCard, Trash2, Loader2, AlertCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { InvoicePurchase } from "@/types/purchase";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useInvoicesAPI, PurchaseAPIResponse } from "@/hooks/usePurchasesAPI";
 import { Pagination } from "@/components/Pagination";
@@ -65,9 +36,7 @@ const getStatusBadgeProps = (status: string) => {
 };
 
 // Transform API data to table format
-const transformAPIDataToTable = (
-  apiData: PurchaseAPIResponse[]
-): InvoicePurchase[] => {
+const transformAPIDataToTable = (apiData: PurchaseAPIResponse[]): InvoicePurchase[] => {
   return apiData.map((item) => ({
     id: item.id,
     date: new Date(item.date),
@@ -86,24 +55,8 @@ const transformAPIDataToTable = (
   }));
 };
 
-export function InvoicesTable({
-  onDelete,
-  onEdit,
-  onReceivePayment,
-  onView,
-}: InvoicesTableProps) {
-  const {
-    data: apiData,
-    isLoading,
-    error,
-    page,
-    limit,
-    totalPages,
-    total,
-    handlePageChange,
-    handleLimitChange,
-    refresh,
-  } = useInvoicesAPI();
+export function InvoicesTable({ onDelete, onEdit, onReceivePayment, onView }: InvoicesTableProps) {
+  const { data: apiData, isLoading, error, page, limit, totalPages, total, handlePageChange, handleLimitChange, refresh } = useInvoicesAPI();
 
   // Transform API data to table format
   const invoices = transformAPIDataToTable(apiData);
@@ -160,9 +113,7 @@ export function InvoicesTable({
               <TableCell colSpan={8} className="text-center py-12">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                  <span className="text-sm text-gray-500">
-                    Loading invoices...
-                  </span>
+                  <span className="text-sm text-gray-500">Loading invoices...</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -195,12 +146,7 @@ export function InvoicesTable({
                 <div className="flex flex-col items-center gap-2">
                   <AlertCircle className="h-6 w-6 text-red-500" />
                   <span className="text-sm text-red-600">{error}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={refresh}
-                    className="mt-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={refresh} className="mt-2">
                     Try Again
                   </Button>
                 </div>
@@ -229,49 +175,29 @@ export function InvoicesTable({
           <TableBody>
             {invoices.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-6 text-muted-foreground"
-                >
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                   No invoices found
                 </TableCell>
               </TableRow>
             ) : (
               invoices.map((invoice) => {
                 const paidAmount = (invoice as any).paid_amount || 0;
-                const invoiceTotal =
-                  (invoice as any).grand_total || invoice.amount;
+                const invoiceTotal = (invoice as any).grand_total || invoice.amount;
                 const remainingAmount = invoiceTotal - paidAmount;
 
                 return (
                   <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">
-                      {invoice.date.toLocaleDateString("en-GB")}
-                    </TableCell>
+                    <TableCell className="font-medium">{invoice.date.toLocaleDateString("en-GB")}</TableCell>
                     <TableCell>
-                      <button
-                        onClick={() =>
-                          (window.location.href = `/invoice/${invoice.id}?type=invoice`)
-                        }
-                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                      >
+                      <button onClick={() => (onView ? onView(invoice.id) : (window.location.href = `/purchase-invoice/${invoice.id}`))} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
                         {invoice.number}
                       </button>
                     </TableCell>
+                    <TableCell>{invoice.dueDate ? invoice.dueDate.toLocaleDateString("en-GB") : "-"}</TableCell>
                     <TableCell>
-                      {invoice.dueDate
-                        ? invoice.dueDate.toLocaleDateString("en-GB")
-                        : "-"}
+                      <Badge className={getStatusBadgeProps(invoice.status)}>{invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}</Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeProps(invoice.status)}>
-                        {invoice.status.charAt(0).toUpperCase() +
-                          invoice.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      Rp {formatPriceWithSeparator(remainingAmount)}
-                    </TableCell>
+                    <TableCell className="font-medium">Rp {formatPriceWithSeparator(remainingAmount)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -282,39 +208,27 @@ export function InvoicesTable({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-white">
                           {onView && (
-                            <DropdownMenuItem
-                              onClick={() => onView(invoice.id)}
-                            >
+                            <DropdownMenuItem onClick={() => onView(invoice.id)}>
                               <Eye className="mr-2 h-4 w-4" />
                               View
                             </DropdownMenuItem>
                           )}
                           {onEdit && (
-                            <DropdownMenuItem
-                              onClick={() => onEdit(invoice.id)}
-                            >
+                            <DropdownMenuItem onClick={() => onEdit(invoice.id)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
                           )}
 
-                          {(invoice.status === "pending" ||
-                            invoice.status === "Half-paid") &&
-                            onReceivePayment && (
-                              <DropdownMenuItem
-                                onClick={() => handleReceivePayment(invoice.id)}
-                                className="text-green-600"
-                              >
-                                <CreditCard className="mr-2 h-4 w-4" />
-                                Receive Payment
-                              </DropdownMenuItem>
-                            )}
+                          {(invoice.status === "pending" || invoice.status === "Half-paid") && onReceivePayment && (
+                            <DropdownMenuItem onClick={() => handleReceivePayment(invoice.id)} className="text-green-600">
+                              <CreditCard className="mr-2 h-4 w-4" />
+                              Receive Payment
+                            </DropdownMenuItem>
+                          )}
 
                           {onDelete && (
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteClick(invoice.id)}
-                              className="text-red-600"
-                            >
+                            <DropdownMenuItem onClick={() => handleDeleteClick(invoice.id)} className="text-red-600">
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
@@ -332,34 +246,18 @@ export function InvoicesTable({
 
       {/* Pagination */}
       {invoices.length > 0 && (
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={apiData.length * totalPages}
-          itemsPerPage={limit}
-          onPageChange={handlePageChange}
-          onItemsPerPageChange={handleLimitChange}
-          itemsPerPageOptions={[5, 10, 20, 50]}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} totalItems={apiData.length * totalPages} itemsPerPage={limit} onPageChange={handlePageChange} onItemsPerPageChange={handleLimitChange} itemsPerPageOptions={[5, 10, 20, 50]} />
       )}
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this transaction?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              invoice.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Are you sure you want to delete this transaction?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. This will permanently delete the invoice.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDelete}>No</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
               Yes, Delete
             </AlertDialogAction>
           </AlertDialogFooter>

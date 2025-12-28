@@ -1,7 +1,7 @@
-
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { useInvoiceById } from "@/hooks/useInvoice";
+import { useSalesInvoiceDetail } from "@/hooks/useSalesInvoiceDetail";
 import { InvoiceHeader } from "@/components/invoice/InvoiceHeader";
 import { InvoiceSummary } from "@/components/invoice/InvoiceSummary";
 import { VendorInformation } from "@/components/invoice/VendorInformation";
@@ -11,8 +11,19 @@ import { AdditionalInformation } from "@/components/invoice/AdditionalInformatio
 
 const InvoiceDetail = () => {
   const { id } = useParams<{ id: string }>();
-  
+
+  const navigate = useNavigate();
+
   const { data: invoice, isLoading, error } = useInvoiceById(id || "");
+  const { data: salesInvoice, isLoading: salesLoading } = useSalesInvoiceDetail(id);
+
+  // If this route was reached but the supabase invoice is not found,
+  // and the sales backend returns an invoice for the same id, redirect
+  // to the sales invoice detail route to load via backend API.
+  if (!isLoading && !salesLoading && !invoice && salesInvoice) {
+    navigate(`/sales-invoice/${id}`);
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -48,10 +59,10 @@ const InvoiceDetail = () => {
     date: new Date(invoice.date),
     dueDate: invoice.due_date ? new Date(invoice.due_date) : null,
     status: invoice.status,
-    approver: invoice.approver || '',
-    priority: 'Medium' as const,
+    approver: invoice.approver || "",
+    priority: "Medium" as const,
     tags: invoice.tags || [],
-    items: invoice.items || []
+    items: invoice.items || [],
   };
 
   const isPaid = invoiceDisplay.status === "completed";
@@ -65,33 +76,15 @@ const InvoiceDetail = () => {
 
         <div className="p-6">
           <div className="grid grid-cols-1 gap-6">
-            <InvoiceSummary 
-              number={invoiceDisplay.number}
-              date={invoiceDisplay.date}
-              dueDate={invoiceDisplay.dueDate}
-              status={invoiceDisplay.status}
-              isOverdue={isOverdue}
-              isPaid={isPaid}
-            />
+            <InvoiceSummary number={invoiceDisplay.number} date={invoiceDisplay.date} dueDate={invoiceDisplay.dueDate} status={invoiceDisplay.status} isOverdue={isOverdue} isPaid={isPaid} />
 
             <VendorInformation />
 
-            <InvoiceItems 
-              items={invoiceDisplay.items}
-              isPaid={isPaid}
-            />
+            <InvoiceItems items={invoiceDisplay.items} isPaid={isPaid} />
 
-            <PaymentInformation 
-              isPaid={isPaid}
-              isOverdue={isOverdue}
-              date={invoiceDisplay.date}
-            />
+            <PaymentInformation isPaid={isPaid} isOverdue={isOverdue} date={invoiceDisplay.date} />
 
-            <AdditionalInformation 
-              approver={invoiceDisplay.approver}
-              priority={invoiceDisplay.priority}
-              tags={invoiceDisplay.tags}
-            />
+            <AdditionalInformation approver={invoiceDisplay.approver} priority={invoiceDisplay.priority} tags={invoiceDisplay.tags} />
           </div>
         </div>
       </div>

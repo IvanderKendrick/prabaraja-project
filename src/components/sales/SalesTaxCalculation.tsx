@@ -7,28 +7,56 @@ import { formatCurrency } from "@/lib/utils";
 
 interface SalesTaxCalculationProps {
   subtotal: number;
-  onTaxChange?: (taxData: { dpp: number; ppn: number; pph: number; grandTotal: number }) => void;
+  onTaxChange?: (taxData: { dpp: number; ppn: number; pph: number; grandTotal: number; ppn_percentage?: number | string; pph_type?: string; pph_percentage?: number | string }) => void;
+  onTaxMethodChange?: (method: string) => void;
 }
 
-export function SalesTaxCalculation({ subtotal, onTaxChange }: SalesTaxCalculationProps) {
+export function SalesTaxCalculation({ subtotal, onTaxChange, onTaxMethodChange }: SalesTaxCalculationProps) {
   const [isTaxAfter, setIsTaxAfter] = useState(false);
   const [selectedPph, setSelectedPph] = useState<"pph22" | "pph23" | "custom">("pph23");
   const [customTaxRate, setCustomTaxRate] = useState<string>("0");
   const [ppnRate, setPpnRate] = useState<"11" | "12">("11");
 
   const calculateDpp = () => {
-    return isTaxAfter ? subtotal / 1.11 : (11 / 12) * subtotal;
+    const rate = ppnRate === "11" ? 0.11 : 0.12;
+    // Mirror purchases logic: when Before Tax and rate 12%, DPP = 11/12 * subtotal
+    if (!isTaxAfter) {
+      if (rate === 0.11) {
+        return subtotal;
+      } else {
+        return (11 / 12) * subtotal;
+      }
+    } else {
+      if (rate === 0.11) {
+        return subtotal / 1.11;
+      } else {
+        return subtotal / 1.12;
+      }
+    }
   };
 
   const calculatePpn = () => {
     const rate = ppnRate === "11" ? 0.11 : 0.12;
-    return calculateDpp() * rate;
+    if (!isTaxAfter) {
+      return calculateDpp() * rate;
+    } else {
+      if (rate === 0.11) {
+        return (calculateDpp() * 11) / 100;
+      } else {
+        return (calculateDpp() * 12) / 100;
+      }
+    }
   };
 
   const calculatePph = () => {
     const dpp = calculateDpp();
+    const subtotalWithCosts = subtotal; // sales uses subtotal as base (no extra costs in this component)
     if (selectedPph === "pph23") {
-      return dpp * 0.02;
+      if (!isTaxAfter) {
+        return Math.round(((subtotalWithCosts + calculatePpn()) / 1.11) * 0.0265);
+      } else {
+        return Math.round(((subtotalWithCosts + calculatePpn()) / 1.011) * 0.0265);
+      }
     } else if (selectedPph === "pph22") {
       if (dpp <= 500000000) return dpp * 0.01;
       if (dpp <= 10000000000) return dpp * 0.015;
@@ -39,7 +67,12 @@ export function SalesTaxCalculation({ subtotal, onTaxChange }: SalesTaxCalculati
   };
 
   const calculateGrandTotal = () => {
-    return subtotal + calculatePpn() - calculatePph();
+    const ppn = calculatePpn();
+    const pph = calculatePph();
+    if (isTaxAfter) {
+      return calculateDpp() + ppn - pph;
+    }
+    return subtotal + ppn - pph;
   };
 
   const handleCustomTaxChange = (value: string) => {
@@ -48,17 +81,51 @@ export function SalesTaxCalculation({ subtotal, onTaxChange }: SalesTaxCalculati
     }
   };
 
-  // Call onTaxChange whenever calculations change
+  // Call onTaxChange whenever calculations change — emit rounded values
   React.useEffect(() => {
+    const dppRaw = calculateDpp();
+    const ppnRaw = calculatePpn();
+    const pphRaw = calculatePph();
+
+    const dppRounded = Math.round(dppRaw);
+    const ppnRounded = Math.round(ppnRaw);
+    const pphRounded = Math.round(pphRaw);
+
+    const grandTotalRounded = isTaxAfter ? dppRounded + ppnRounded - pphRounded : subtotal + ppnRounded - pphRounded;
+
+    // Determine percentages/types to emit
+    const ppnPercentage = ppnRate === "11" ? 11 : 12;
+
+    let pphPercentage: number | string = 0;
+    if (selectedPph === "pph23") {
+      // use 2% for PPh23 per requirement
+      pphPercentage = 2;
+    } else if (selectedPph === "pph22") {
+      // determine percentage based on DPP tiers used in calculatePph
+      if (dppRaw <= 500000000) pphPercentage = 1;
+      else if (dppRaw <= 10000000000) pphPercentage = 1.5;
+      else pphPercentage = 2.5;
+    } else {
+      // custom
+      const parsed = parseFloat(customTaxRate.replace(",", "."));
+      pphPercentage = isNaN(parsed) ? 0 : parsed;
+    }
+
     if (onTaxChange) {
       onTaxChange({
-        dpp: calculateDpp(),
-        ppn: calculatePpn(),
-        pph: calculatePph(),
-        grandTotal: calculateGrandTotal(),
+        dpp: dppRounded,
+        ppn: ppnRounded,
+        pph: pphRounded,
+        grandTotal: grandTotalRounded,
+        ppn_percentage: ppnPercentage,
+        pph_type: selectedPph,
+        pph_percentage: pphPercentage,
       });
     }
-  }, [subtotal, isTaxAfter, selectedPph, customTaxRate, ppnRate, onTaxChange]);
+    if (typeof onTaxMethodChange === "function") {
+      onTaxMethodChange(isTaxAfter ? "After Calculate" : "Before Calculate");
+    }
+  }, [subtotal, isTaxAfter, selectedPph, customTaxRate, ppnRate, onTaxChange, onTaxMethodChange]);
 
   return (
     <div className="mt-8 space-y-4 bg-white p-6 rounded-lg border">
@@ -74,7 +141,7 @@ export function SalesTaxCalculation({ subtotal, onTaxChange }: SalesTaxCalculati
 
       <div className="grid grid-cols-2 gap-4">
         <Label>DPP/VOT</Label>
-        <div className="text-right">{formatCurrency(calculateDpp())}</div>
+        <div className="text-right">{formatCurrency(Math.round(calculateDpp()))}</div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -89,7 +156,7 @@ export function SalesTaxCalculation({ subtotal, onTaxChange }: SalesTaxCalculati
               <SelectItem value="12">12%</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex-1 text-right">{formatCurrency(calculatePpn())}</div>
+          <div className="flex-1 text-right">{formatCurrency(Math.round(calculatePpn()))}</div>
         </div>
       </div>
 
@@ -111,16 +178,11 @@ export function SalesTaxCalculation({ subtotal, onTaxChange }: SalesTaxCalculati
               <Input type="text" value={customTaxRate} onChange={(e) => handleCustomTaxChange(e.target.value)} placeholder="0,00%" className="flex-1" />
             </div>
           )}
-          <div className="text-right">{formatCurrency(calculatePph())}</div>
+          <div className="text-right">{formatCurrency(Math.round(calculatePph()))}</div>
         </div>
       </div>
 
-      <div className="mt-6 pt-4 border-t">
-        <div className="flex justify-between items-center">
-          <Label className="text-lg font-semibold">Grand Total</Label>
-          <div className="text-xl font-bold">{formatCurrency(calculateGrandTotal())}</div>
-        </div>
-      </div>
+      {/* Grand Total rendering moved to parent form to avoid duplication */}
     </div>
   );
 }

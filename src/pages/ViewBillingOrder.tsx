@@ -137,11 +137,11 @@ const ViewBillingOrder: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>Basic Information</CardTitle>
-              <button onClick={() => navigate("/billing-summary")} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2 text-sm font-bold">
+              <button onClick={() => navigate("/billing-summary?tab=order")} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2 text-sm font-bold">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
-                Back to Billing Summary
+                Back to Billing Order
               </button>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">

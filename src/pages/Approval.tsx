@@ -46,7 +46,7 @@ const Approval = () => {
     <div className="flex h-screen w-full">
       <Sidebar />
       <div className="flex-1 overflow-auto">
-        <Header title="Approval" description="Manage approvals across all types" />
+        <Header title="Purchases Approval" description="Manage approvals across all types" />
 
         <div className="p-6 space-y-4">
           {/* Tabs for desktop, Select for mobile */}
@@ -77,12 +77,7 @@ const Approval = () => {
             </Select>
           </div>
 
-          <ApprovalTableGeneric
-            key={refreshKey}
-            action={action}
-            onApprove={onApproved}
-            onReject={onRejected}
-          />
+          <ApprovalTableGeneric key={refreshKey} action={action} onApprove={onApproved} onReject={onRejected} />
         </div>
       </div>
     </div>
@@ -90,5 +85,3 @@ const Approval = () => {
 };
 
 export default Approval;
-
-

@@ -1,7 +1,6 @@
-
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface SalesInvoice {
   id: string;
@@ -11,7 +10,7 @@ export interface SalesInvoice {
   customer_name: string;
   invoice_date: string;
   due_date: string;
-  status: 'Paid' | 'Unpaid' | 'Late Payment' | 'Awaiting Payment';
+  status: "Paid" | "Unpaid" | "Late Payment" | "Awaiting Payment";
   items: any[];
   grand_total: number;
   tax_details?: {
@@ -79,15 +78,12 @@ export const useSalesInvoices = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['sales-invoices'],
+    queryKey: ["sales-invoices"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.from("sales").select("*").order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching sales invoices:', error);
+        console.error("Error fetching sales invoices:", error);
         throw error;
       }
 
@@ -98,54 +94,52 @@ export const useSalesInvoices = () => {
 };
 
 // Hook for Order & Delivery
-export const useOrderDeliveries = () => {
+export const useOrderDeliveries = (enabled: boolean = false) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['order-deliveries'],
+    queryKey: ["order-deliveries"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('order_deliveries')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.from("order_deliveries").select("*").order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching order deliveries:', error);
+        console.error("Error fetching order deliveries:", error);
         throw error;
       }
 
       return data as OrderDelivery[];
     },
-    enabled: !!user,
+    enabled: !!user && enabled,
+    // Prevent automatic background refetches (window focus / reconnect / interval)
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    refetchOnReconnect: false,
   });
 };
 
 // Hook for Quotations
-export const useQuotations = () => {
+export const useQuotations = (enabled: boolean = true) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['quotations'],
+    queryKey: ["quotations"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('quotations')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.from("quotations").select("*").order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching quotations:', error);
+        console.error("Error fetching quotations:", error);
         throw error;
       }
 
       return data as Quotation[];
     },
-    enabled: !!user,
+    enabled: !!user && enabled,
   });
 };
 
 // ========== MUTATION HOOKS ==========
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Create Order Delivery
 export const useCreateOrderDelivery = () => {
@@ -153,25 +147,27 @@ export const useCreateOrderDelivery = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (newOrder: Omit<OrderDelivery, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (newOrder: Omit<OrderDelivery, "id" | "user_id" | "created_at" | "updated_at">) => {
       const { data, error } = await supabase
-        .from('order_deliveries')
-        .insert([{
-          ...newOrder,
-          user_id: user?.id,
-        }])
+        .from("order_deliveries")
+        .insert([
+          {
+            ...newOrder,
+            user_id: user?.id,
+          },
+        ])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating order delivery:', error);
+        console.error("Error creating order delivery:", error);
         throw error;
       }
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-deliveries'] });
+      queryClient.invalidateQueries({ queryKey: ["order-deliveries"] });
     },
   });
 };
@@ -182,22 +178,17 @@ export const useUpdateOrderDelivery = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<OrderDelivery> }) => {
-      const { data, error } = await supabase
-        .from('order_deliveries')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("order_deliveries").update(updates).eq("id", id).select().single();
 
       if (error) {
-        console.error('Error updating order delivery:', error);
+        console.error("Error updating order delivery:", error);
         throw error;
       }
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-deliveries'] });
+      queryClient.invalidateQueries({ queryKey: ["order-deliveries"] });
     },
   });
 };
@@ -208,20 +199,17 @@ export const useDeleteOrderDelivery = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('order_deliveries')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("order_deliveries").delete().eq("id", id);
 
       if (error) {
-        console.error('Error deleting order delivery:', error);
+        console.error("Error deleting order delivery:", error);
         throw error;
       }
 
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-deliveries'] });
+      queryClient.invalidateQueries({ queryKey: ["order-deliveries"] });
     },
   });
 };
@@ -232,25 +220,27 @@ export const useCreateQuotation = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (newQuotation: Omit<Quotation, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (newQuotation: Omit<Quotation, "id" | "user_id" | "created_at" | "updated_at">) => {
       const { data, error } = await supabase
-        .from('quotations')
-        .insert([{
-          ...newQuotation,
-          user_id: user?.id,
-        }])
+        .from("quotations")
+        .insert([
+          {
+            ...newQuotation,
+            user_id: user?.id,
+          },
+        ])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating quotation:', error);
+        console.error("Error creating quotation:", error);
         throw error;
       }
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
     },
   });
 };
@@ -261,22 +251,17 @@ export const useUpdateQuotation = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Quotation> }) => {
-      const { data, error } = await supabase
-        .from('quotations')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("quotations").update(updates).eq("id", id).select().single();
 
       if (error) {
-        console.error('Error updating quotation:', error);
+        console.error("Error updating quotation:", error);
         throw error;
       }
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
     },
   });
 };
@@ -287,20 +272,17 @@ export const useDeleteQuotation = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('quotations')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("quotations").delete().eq("id", id);
 
       if (error) {
-        console.error('Error deleting quotation:', error);
+        console.error("Error deleting quotation:", error);
         throw error;
       }
 
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
     },
   });
 };
