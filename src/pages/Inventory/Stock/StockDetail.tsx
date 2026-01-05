@@ -27,12 +27,32 @@ import {
 import getAuthToken from "@/utils/getToken";
 import { toast } from "sonner";
 
+const getCurrentMonthYear = () => {
+  const now = new Date();
+  const month = now.toLocaleString("id-ID", { month: "long" });
+  const year = now.getFullYear();
+  return `${month} ${year}`;
+};
+
+const isEndOfMonth = (date = new Date()) => {
+  const lastDayOfMonth = new Date(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    0
+  ).getDate();
+
+  return date.getDate() === lastDayOfMonth;
+};
+
 export default function StockDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   // Header info
   const headerTitle = "Stock Detail";
   const headerDescription = "View and manage specific stock item details.";
+
+  // Stock adjustment date validation
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   // ======= State untuk stock info =======
   const [stockInfo, setStockInfo] = useState({
@@ -69,6 +89,50 @@ export default function StockDetail() {
     difference: 0, // derived nanti
     price: 0, // default aman
   });
+
+  const submitStockAdjustment = async () => {
+    try {
+      const token = await getAuthToken();
+
+      const today = new Date().toISOString().split("T")[0];
+      const monthYear = getCurrentMonthYear();
+
+      const payload = {
+        action: "stockAdjustment",
+        stock_name: stockInfo.name,
+        inventory_date: today,
+        description: `Stock Adjustment ${monthYear}`,
+        nett_purchase: adjustmentData.difference,
+      };
+
+      const response = await axios.post(
+        "https://pbw-backend-api.vercel.app/api/products",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success(response.data?.message || "Stock updated successfully");
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to update stock";
+
+      toast.error(errorMessage);
+    } finally {
+      setIsAdjustmentOpen(false);
+    }
+  };
+
+  const handleAdjustmentSubmit = () => {
+    if (isEndOfMonth()) {
+      submitStockAdjustment();
+    } else {
+      setIsConfirmOpen(true);
+    }
+  };
 
   // const stockHistory = [
   //   {
@@ -241,11 +305,6 @@ export default function StockDetail() {
     } finally {
       navigate("/inventory/stock");
     }
-  };
-
-  const handleAdjustmentSubmit = () => {
-    console.log("Adjustment submitted:", adjustmentData);
-    setIsAdjustmentOpen(false);
   };
 
   return (
@@ -434,10 +493,10 @@ export default function StockDetail() {
                       </TableCell>
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell>
-                        Rp {item.price.toLocaleString("id-ID")}
+                        Rp {(item.price ?? 0).toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell>
-                        Rp {item.total.toLocaleString("id-ID")}
+                        Rp {(item.total ?? 0).toLocaleString("id-ID")}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -519,6 +578,45 @@ export default function StockDetail() {
               onClick={handleAdjustmentSubmit}
             >
               Save Adjustment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">
+              Stock Adjustment Confirmation
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="text-sm text-gray-600 space-y-2">
+            <p>
+              Today is <strong>not the end of the month</strong>.
+            </p>
+            <p>
+              Stock adjustments are typically performed at the end of the month
+              to ensure inventory accuracy and accounting consistency.
+            </p>
+            <p className="font-medium text-gray-800">
+              Are you sure you want to proceed?
+            </p>
+          </div>
+
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
+              Cancel
+            </Button>
+
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                setIsConfirmOpen(false);
+                submitStockAdjustment();
+              }}
+            >
+              Yes, Continue
             </Button>
           </DialogFooter>
         </DialogContent>
